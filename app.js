@@ -10,15 +10,12 @@ const ENTRY_ID = 'entry.479239932';
 
 const puntuaciones = {
   grupos: {
-    partido: {
-      resultadoExacto: 2,
-      ganadorEmpateCorrecto: 1
-    },
     posicion: {
-      primero: 3,
-      segundo: 2,
-      tercero: 1
-    }
+      primero: 4,
+      segundo: 3,
+      tercero: 2
+    },
+    mejorTercero: 1
   },
   eliminatorias: {
     round32: 2,
@@ -30,10 +27,32 @@ const puntuaciones = {
     thirdPlace: 15
   },
   premios: {
-    goldenBoot: [15, 10, 5],
-    goldenBall: [15, 10, 5]
+    topScorer: 8,
+    topAssister: 5,
+    goldenGlove: 5,
+    topScoringTeam: 5,
+    surpriseTeam: 8
   }
 };
+
+// Configuración declarativa de los 5 premios.
+// `kind` indica si el valor seleccionable es un jugador (de AWARD_PLAYERS)
+// o un equipo (de cualquier selección participante en el Mundial).
+const AWARDS_CONFIG = [
+  { key: 'topScorer',      selectId: 'awardTopScorer',      kind: 'player', emoji: '🥇', label: 'Máximo Goleador',          points: puntuaciones.premios.topScorer },
+  { key: 'topAssister',    selectId: 'awardTopAssister',    kind: 'player', emoji: '🎯', label: 'Máximo Asistente',         points: puntuaciones.premios.topAssister },
+  { key: 'goldenGlove',    selectId: 'awardGoldenGlove',    kind: 'player', emoji: '🧤', label: 'Guante de Oro (portero)',  points: puntuaciones.premios.goldenGlove },
+  { key: 'topScoringTeam', selectId: 'awardTopScoringTeam', kind: 'team',   emoji: '⚽', label: 'Equipo Más Goleador',      points: puntuaciones.premios.topScoringTeam },
+  { key: 'surpriseTeam',   selectId: 'awardSurpriseTeam',   kind: 'team',   emoji: '😱', label: 'Sorpresa del Mundial',     points: puntuaciones.premios.surpriseTeam }
+];
+
+const AWARD_SELECT_IDS = AWARDS_CONFIG.map(a => a.selectId);
+
+function emptyAwardsState() {
+  const empty = {};
+  AWARDS_CONFIG.forEach(a => { empty[a.key] = ''; });
+  return empty;
+}
 
 const FLAG_CODE = {
   'Mexico':'mx','South Africa':'za','South Korea':'kr','Czech Republic':'cz',
@@ -349,39 +368,69 @@ function getTeamFifaRank(team) {
   return FIFA_RANKING_TIEBREAK[team] ?? 999;
 }
 
-function compareBestThirds(a, b) {
-  return (b.row.pts - a.row.pts) ||
-    (b.row.gd - a.row.gd) ||
-    (b.row.gf - a.row.gf) ||
-    (getTeamConductScore(b.row.team) - getTeamConductScore(a.row.team)) ||
-    (getTeamFifaRank(a.row.team) - getTeamFifaRank(b.row.team)) ||
+function compareBestThirdsByRanking(a, b) {
+  // Sin resultados exactos de partidos solo nos quedan los rankings FIFA y
+  // la letra del grupo. Sirve como orden por defecto cuando el usuario aún no
+  // ha confirmado el orden de los mejores terceros.
+  return (getTeamFifaRank(a.team) - getTeamFifaRank(b.team)) ||
     a.group.localeCompare(b.group);
 }
 
-function getAutoThirdPlaceTeams() {
+function getAllThirdPlaceCandidates() {
+  // Tercer puesto que cada grupo (con orden confirmado) tiene a día de hoy.
   return GROUP_NAMES
-    .filter(group => isGroupComplete(group))
-    .map(group => ({ group, row: calculateGroupStandings(group)[2] }))
-    .filter(item => item.row)
-    .sort(compareBestThirds)
-    .slice(0, 8);
+    .map(group => ({ group, team: state.groups[group]?.[2] || null }))
+    .filter(item => item.team);
 }
 
-function syncAutoThirdPlace() {
-  state.thirdPlace = getAutoThirdPlaceTeams().map(item => item.row.team);
+function ensureThirdPlaceRanking() {
+  // Mantén state.thirdPlace sincronizado con los terceros vigentes de cada
+  // grupo. Conserva el orden que el usuario haya arrastrado para los equipos
+  // que sigan siendo terceros; añade los nuevos al final y descarta los que
+  // ya no lo sean.
+  const candidates = getAllThirdPlaceCandidates();
+  const validSet = new Set(candidates.map(c => c.team));
+  const existing = (state.thirdPlace || []).filter(team => validSet.has(team));
+  const existingSet = new Set(existing);
+
+  // Añade nuevos terceros respetando un orden estable: por ranking FIFA y
+  // luego letra del grupo.
+  const missing = candidates
+    .filter(item => !existingSet.has(item.team))
+    .sort(compareBestThirdsByRanking)
+    .map(item => item.team);
+
+  state.thirdPlace = [...existing, ...missing];
+
+  if (state.thirdPlace.length < candidates.length) state.thirdPlaceConfirmed = false;
+}
+
+function getQualifiedThirdPlaceTeams() {
+  // Los 8 primeros del ranking del usuario son los que pasan a 1/16.
+  ensureThirdPlaceRanking();
+  return state.thirdPlace.slice(0, 8);
 }
 
 function buildTPAllocation() {
   tpAllocation = {};
-  syncAutoThirdPlace();
+  ensureThirdPlaceRanking();
 
-  const qualifiedThirds = getAutoThirdPlaceTeams();
-  if (qualifiedThirds.length !== 8) return;
+  const qualifiedTeams = getQualifiedThirdPlaceTeams();
+  if (qualifiedTeams.length !== 8) return;
+
+  // Necesitamos saber a qué grupo pertenece cada tercero clasificado para
+  // poder usar TP_TABLE, exactamente igual que antes.
+  const candidates = getAllThirdPlaceCandidates();
+  const groupByTeam = {};
+  candidates.forEach(item => { groupByTeam[item.team] = item.group; });
 
   const byGroup = {};
-  qualifiedThirds.forEach(item => {
-    byGroup[item.group] = item.row.team;
+  qualifiedTeams.forEach(team => {
+    const g = groupByTeam[team];
+    if (g) byGroup[g] = team;
   });
+
+  if (Object.keys(byGroup).length !== 8) return;
 
   const groups = Object.keys(byGroup).sort();
   const key = groups.join("");
@@ -401,21 +450,21 @@ function buildTPAllocation() {
 // ---- State ----
 let state = {
   groups: {},
-  groupMatches: {},       // group -> { "Team A__Team B": {home, away} }
-  thirdPlace: [],
-  matchTeams: {},         // matchId -> { team1, team2 }
-  knockoutResults: {},    // matchId -> winner team name
-  awards: { goldenBoot: ['','',''], goldenBall: ['','',''] }
+  groupsConfirmed: {},      // group letter -> boolean, true cuando el usuario haya confirmado la ordenación
+  thirdPlace: [],           // Ranking elegido por el usuario de los 12 terceros (top 8 clasifican)
+  thirdPlaceConfirmed: false,
+  matchTeams: {},           // matchId -> { team1, team2 }
+  knockoutResults: {},      // matchId -> winner team name
+  awards: emptyAwardsState()
 };
 
-const LOCAL_STORAGE_VERSION = '5';
+const LOCAL_STORAGE_VERSION = '6';
 const LOCAL_STORAGE_VERSION_KEY = 'wc2026_version';
 const LOCAL_STORAGE_PICKS_KEY = 'wc2026_picks';
 let localSaveTimer = null;
 
 function normalizeLoadedState() {
-  ensureAllGroupMatches();
-  updateAllGroupOrdersFromMatches();
+  ensureGroupsInitialized();
   buildTPAllocation();
   computeMatchTeams();
 }
@@ -447,18 +496,23 @@ function restoreLocalPrediction() {
 
     const data = JSON.parse(saved);
 
-    if (data.groupMatches) {
-      state.groupMatches = data.groupMatches;
-      ensureAllGroupMatches();
-      updateAllGroupOrdersFromMatches();
-    }
-
     if (data.groups) {
       GROUP_NAMES.forEach(g => {
         if (Array.isArray(data.groups[g]) && data.groups[g].length) {
           state.groups[g] = data.groups[g].slice();
         }
       });
+    }
+
+    if (data.groupsConfirmed) {
+      GROUP_NAMES.forEach(g => {
+        if (data.groupsConfirmed[g]) state.groupsConfirmed[g] = true;
+      });
+    }
+
+    if (Array.isArray(data.thirdPlace) && data.thirdPlace.length) {
+      state.thirdPlace = data.thirdPlace.slice();
+      state.thirdPlaceConfirmed = Boolean(data.thirdPlaceConfirmed);
     }
 
     if (data.knockout?.matches) {
@@ -478,11 +532,12 @@ function restoreLocalPrediction() {
       if (data.knockout.thirdPlace && KO_TREE.thirdPlace?.[0]) state.knockoutResults[KO_TREE.thirdPlace[0].num] = data.knockout.thirdPlace;
     }
 
-    if (data.awards) {
-      state.awards = {
-        goldenBoot: data.awards.goldenBoot || ['', '', ''],
-        goldenBall: data.awards.goldenBall || ['', '', '']
-      };
+    if (data.awards && typeof data.awards === 'object') {
+      const merged = emptyAwardsState();
+      AWARDS_CONFIG.forEach(a => {
+        if (typeof data.awards[a.key] === 'string') merged[a.key] = data.awards[a.key];
+      });
+      state.awards = merged;
     }
 
     normalizeLoadedState();
@@ -558,7 +613,7 @@ async function loadData() {
     GROUP_NAMES.forEach(g => {
       state.groups[g] = TEAMS_BY_GROUP[g].map(t => t.name);
     });
-    ensureAllGroupMatches();
+    ensureGroupsInitialized();
 
     // Build bracket using official 2026 FIFA structure
     KO_TREE = {
@@ -626,6 +681,10 @@ function findTeamGroup(teamName) {
 
 function getTeamFlagClass(teamName) { return getFlagClass(teamName); }
 
+// Helpers de partido conservados para compatibilidad: el resto de la app ya no
+// se basa en resultados exactos, pero el bracket se sigue beneficiando de los
+// metadatos (fechas, jornada, etc.) del fixture oficial si quisiéramos volver
+// a mostrarlos.
 function groupMatchKey(team1, team2) {
   return [team1, team2].sort().join('__');
 }
@@ -634,7 +693,6 @@ function getGroupMatchList(group) {
   if (GROUP_MATCHES_BY_GROUP[group] && GROUP_MATCHES_BY_GROUP[group].length) {
     return GROUP_MATCHES_BY_GROUP[group];
   }
-
   const teams = (TEAMS_BY_GROUP[group] || []).map(t => t.name);
   const matches = [];
   for (let i = 0; i < teams.length; i++) {
@@ -657,203 +715,172 @@ function getMatchdayNumber(match, fallback) {
   return found ? found[0] : String(fallback + 1);
 }
 
-function ensureAllGroupMatches() {
-  if (!state.groupMatches) state.groupMatches = {};
+function ensureGroupsInitialized() {
+  if (!state.groups) state.groups = {};
+  if (!state.groupsConfirmed) state.groupsConfirmed = {};
 
   GROUP_NAMES.forEach(group => {
-    if (!state.groupMatches[group]) state.groupMatches[group] = {};
-
-    getGroupMatchList(group).forEach(match => {
-      if (!state.groupMatches[group][match.key]) {
-        state.groupMatches[group][match.key] = { home: null, away: null };
-      }
-    });
+    const teams = (TEAMS_BY_GROUP[group] || []).map(t => t.name);
+    const current = Array.isArray(state.groups[group]) ? state.groups[group] : [];
+    const valid = current.filter(t => teams.includes(t));
+    const missing = teams.filter(t => !valid.includes(t));
+    state.groups[group] = [...valid, ...missing];
   });
-}
 
-function parseGoalValue(value) {
-  if (value === '' || value === null || value === undefined) return null;
-  const num = Number(value);
-  if (!Number.isInteger(num) || num < 0 || num > 99) return null;
-  return num;
+  // El ranking de mejores terceros depende de los terceros vigentes.
+  ensureThirdPlaceRanking();
 }
 
 function calculateGroupStandings(group) {
-  ensureAllGroupMatches();
-
-  const originalTeams = (TEAMS_BY_GROUP[group] || []).map(t => t.name);
-  const stats = {};
-  const playedMatches = [];
-
-  originalTeams.forEach((team, index) => {
-    stats[team] = { team, index, pts: 0, gf: 0, ga: 0, gd: 0, played: 0, wins: 0 };
-  });
-
-  getGroupMatchList(group).forEach(match => {
-    const result = state.groupMatches[group]?.[match.key] || {};
-    const home = parseGoalValue(result.home);
-    const away = parseGoalValue(result.away);
-
-    if (home === null || away === null) return;
-
-    const a = stats[match.team1];
-    const b = stats[match.team2];
-    if (!a || !b) return;
-
-    playedMatches.push({ team1: match.team1, team2: match.team2, home, away });
-
-    a.played += 1;
-    b.played += 1;
-    a.gf += home;
-    a.ga += away;
-    b.gf += away;
-    b.ga += home;
-    a.gd = a.gf - a.ga;
-    b.gd = b.gf - b.ga;
-
-    if (home > away) {
-      a.pts += 3;
-      a.wins += 1;
-    } else if (away > home) {
-      b.pts += 3;
-      b.wins += 1;
-    } else {
-      a.pts += 1;
-      b.pts += 1;
-    }
-  });
-
-  const overallCompare = (a, b) =>
-    (b.gd - a.gd) ||
-    (b.gf - a.gf) ||
-    (b.wins - a.wins) ||
-    (a.index - b.index);
-
-  const getHeadToHeadStats = (teamRows) => {
-    const names = new Set(teamRows.map(row => row.team));
-    const h2h = {};
-
-    teamRows.forEach(row => {
-      h2h[row.team] = { team: row.team, pts: 0, gf: 0, ga: 0, gd: 0 };
-    });
-
-    playedMatches.forEach(match => {
-      if (!names.has(match.team1) || !names.has(match.team2)) return;
-
-      const a = h2h[match.team1];
-      const b = h2h[match.team2];
-
-      a.gf += match.home;
-      a.ga += match.away;
-      b.gf += match.away;
-      b.ga += match.home;
-      a.gd = a.gf - a.ga;
-      b.gd = b.gf - b.ga;
-
-      if (match.home > match.away) a.pts += 3;
-      else if (match.away > match.home) b.pts += 3;
-      else {
-        a.pts += 1;
-        b.pts += 1;
-      }
-    });
-
-    return h2h;
-  };
-
-  const h2hKey = (row, h2h) => {
-    const stat = h2h[row.team];
-    return `${stat.pts}|${stat.gd}|${stat.gf}`;
-  };
-
-  const rankPointTie = (teamRows) => {
-    if (teamRows.length <= 1) return teamRows;
-
-    const h2h = getHeadToHeadStats(teamRows);
-    const sorted = [...teamRows].sort((a, b) => {
-      const ah = h2h[a.team];
-      const bh = h2h[b.team];
-
-      return (bh.pts - ah.pts) ||
-        (bh.gd - ah.gd) ||
-        (bh.gf - ah.gf) ||
-        overallCompare(a, b);
-    });
-
-    const buckets = [];
-    sorted.forEach(row => {
-      const key = h2hKey(row, h2h);
-      const last = buckets[buckets.length - 1];
-      if (last && last.key === key) last.rows.push(row);
-      else buckets.push({ key, rows: [row] });
-    });
-
-    if (buckets.length === 1) {
-      return [...teamRows].sort(overallCompare);
-    }
-
-    return buckets.flatMap(bucket =>
-      bucket.rows.length === 1 ? bucket.rows : rankPointTie(bucket.rows)
-    );
-  };
-
-  const byPoints = [...Object.values(stats)].sort((a, b) =>
-    (b.pts - a.pts) ||
-    overallCompare(a, b)
-  );
-
-  const pointBuckets = [];
-  byPoints.forEach(row => {
-    const last = pointBuckets[pointBuckets.length - 1];
-    if (last && last.pts === row.pts) last.rows.push(row);
-    else pointBuckets.push({ pts: row.pts, rows: [row] });
-  });
-
-  return pointBuckets.flatMap(bucket =>
-    bucket.rows.length === 1 ? bucket.rows : rankPointTie(bucket.rows)
-  );
-}
-
-function updateGroupOrderFromMatches(group) {
-  state.groups[group] = calculateGroupStandings(group).map(row => row.team);
-
-  syncAutoThirdPlace();
-}
-
-function updateAllGroupOrdersFromMatches() {
-  GROUP_NAMES.forEach(updateGroupOrderFromMatches);
+  // Sin marcadores exactos no hay puntos reales; devolvemos una "tabla"
+  // sintética en el orden que el usuario haya colocado (o, si aún no lo ha
+  // hecho, el orden por defecto en el que vienen los equipos).
+  ensureGroupsInitialized();
+  const order = state.groups[group] || (TEAMS_BY_GROUP[group] || []).map(t => t.name);
+  return order.map((team, index) => ({
+    team,
+    index,
+    pts: 0,
+    gf: 0,
+    ga: 0,
+    gd: 0,
+    played: 0,
+    wins: 0
+  }));
 }
 
 function isGroupComplete(group) {
-  ensureAllGroupMatches();
-  return getGroupMatchList(group).every(match => {
-    const result = state.groupMatches[group]?.[match.key] || {};
-    return parseGoalValue(result.home) !== null && parseGoalValue(result.away) !== null;
+  return Boolean(state.groupsConfirmed && state.groupsConfirmed[group]);
+}
+
+function moveArrayItem(arr, from, to) {
+  if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
+  const copy = arr.slice();
+  const [item] = copy.splice(from, 1);
+  copy.splice(to, 0, item);
+  return copy;
+}
+
+// Helper genérico de drag-and-drop para listas ordenables verticalmente.
+// Llama a `onReorder(fromIndex, toIndex)` cuando el usuario suelta.
+// Funciona con HTML5 DnD (escritorio) y con touchstart/move/end (móvil).
+function attachSortable(container, itemSelector, onReorder) {
+  let dragIndex = null;
+  let touchDragEl = null;
+  let touchPlaceholder = null;
+  let touchStartY = 0;
+  let touchStartTop = 0;
+
+  function items() {
+    return Array.from(container.querySelectorAll(itemSelector));
+  }
+
+  function indexOf(el) {
+    return items().indexOf(el);
+  }
+
+  items().forEach(item => {
+    item.setAttribute('draggable', 'true');
+    item.classList.add('sortable-item');
+
+    item.addEventListener('dragstart', e => {
+      dragIndex = indexOf(item);
+      item.classList.add('sortable-dragging');
+      try { e.dataTransfer.setData('text/plain', String(dragIndex)); } catch (err) {}
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('sortable-dragging');
+      items().forEach(el => el.classList.remove('sortable-over'));
+      dragIndex = null;
+    });
+
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      item.classList.add('sortable-over');
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('sortable-over');
+    });
+
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('sortable-over');
+      const fromIdx = dragIndex;
+      const toIdx = indexOf(item);
+      if (fromIdx === null || fromIdx === toIdx || fromIdx < 0 || toIdx < 0) return;
+      onReorder(fromIdx, toIdx);
+    });
+
+    // --- Soporte táctil básico ---
+    item.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      dragIndex = indexOf(item);
+      touchDragEl = item;
+      touchStartY = e.touches[0].clientY;
+      touchStartTop = item.getBoundingClientRect().top;
+      item.classList.add('sortable-dragging');
+    }, { passive: true });
+
+    item.addEventListener('touchmove', e => {
+      if (!touchDragEl || e.touches.length !== 1) return;
+      const y = e.touches[0].clientY;
+      const dy = y - touchStartY;
+      touchDragEl.style.transform = `translateY(${dy}px)`;
+      // Resalta el elemento bajo el dedo
+      const otherEls = items();
+      const targetEl = document.elementFromPoint(e.touches[0].clientX, y);
+      otherEls.forEach(el => el.classList.toggle('sortable-over', el !== touchDragEl && el.contains(targetEl)));
+      e.preventDefault();
+    }, { passive: false });
+
+    item.addEventListener('touchend', e => {
+      if (!touchDragEl) return;
+      const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : touchStartY;
+      const targetEl = document.elementFromPoint(
+        (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : 0,
+        endY
+      );
+      const otherEls = items();
+      let toIdx = -1;
+      otherEls.forEach((el, idx) => {
+        if (el !== touchDragEl && el.contains(targetEl)) toIdx = idx;
+      });
+
+      touchDragEl.style.transform = '';
+      touchDragEl.classList.remove('sortable-dragging');
+      otherEls.forEach(el => el.classList.remove('sortable-over'));
+      const fromIdx = dragIndex;
+      touchDragEl = null;
+      dragIndex = null;
+
+      if (toIdx >= 0 && fromIdx !== null && fromIdx !== toIdx) {
+        onReorder(fromIdx, toIdx);
+      }
+    });
   });
+
+  container.addEventListener('dragover', e => e.preventDefault());
 }
 
 function openGroupResultsModal(group) {
-  ensureAllGroupMatches();
+  ensureGroupsInitialized();
 
   const modal = document.getElementById('predictionModal');
   const viewer = document.getElementById('predictionViewer');
   modal.style.display = 'flex';
 
-  const teams = (TEAMS_BY_GROUP[group] || []).map(t => t.name);
-  const matches = getGroupMatchList(group);
+  const initialOrder = (state.groups[group] || []).slice();
+  let draft = initialOrder.slice();
 
   viewer.innerHTML = `
-    <div class="group-results-editor">
+    <div class="group-results-editor group-order-editor">
       <h3>GRUPO ${group}</h3>
-      <div class="group-modal-team-grid"></div>
-      <div class="group-modal-divider"></div>
-      <h4 class="group-modal-section-title"><span>📅</span> PARTIDOS DEL GRUPO</h4>
-      <div class="group-match-list"></div>
-      <div class="group-live-standings-wrap">
-        <h4 class="group-modal-section-title"><span>🏆</span> CLASIFICACIÓN</h4>
-        <div class="group-modal-standings"></div>
-      </div>
-      <div class="group-modal-info">ⓘ Introduce los resultados de los partidos para ver la clasificación.</div>
+      <p class="group-modal-info">Arrastra (o usa las flechas ▲▼) para predecir el orden final del grupo. <strong>1º y 2º pasan directos a dieciseisavos</strong> · <strong>3º entra al sorteo de mejores terceros</strong> · <strong>4º queda eliminado</strong>.</p>
+      <div class="group-order-list" id="groupOrderList"></div>
       <div class="group-modal-actions">
         <button type="button" class="toolbar-btn" id="cancelGroupResults">Cerrar</button>
         <button type="button" class="submit-btn" id="saveGroupResults">Guardar</button>
@@ -861,90 +888,64 @@ function openGroupResultsModal(group) {
     </div>
   `;
 
-  const teamGrid = viewer.querySelector('.group-modal-team-grid');
-  teams.forEach(team => {
-    const box = document.createElement('div');
-    box.className = 'group-modal-team-card';
-    box.innerHTML = `
-      <span class="team-flag ${getTeamFlagClass(team)}"></span>
-      <span>${team}</span>
-    `;
-    teamGrid.appendChild(box);
-  });
+  const list = viewer.querySelector('#groupOrderList');
 
-  const list = viewer.querySelector('.group-match-list');
+  function fateLabel(idx) {
+    if (idx === 0) return { txt: 'Pasa como 1º', cls: 'fate-qualified' };
+    if (idx === 1) return { txt: 'Pasa como 2º', cls: 'fate-qualified' };
+    if (idx === 2) return { txt: 'Mejor tercero (sorteo)', cls: 'fate-third' };
+    return { txt: 'Eliminado', cls: 'fate-out' };
+  }
 
-  matches.forEach((match, index) => {
-    const result = state.groupMatches[group][match.key] || { home: null, away: null };
-    const row = document.createElement('div');
-    row.className = 'group-match-row';
-    row.innerHTML = `
-      <div class="match-date-badge">
-        <strong>${getMatchdayNumber(match, index)}</strong>
-        <span>${formatMatchDate(match)}</span>
-      </div>
-      <div class="match-team match-team-left">
-        <span class="team-flag ${getTeamFlagClass(match.team1)}"></span>
-        <span>${match.team1}</span>
-      </div>
-      <div class="match-score-controls">
-        <input class="score-input" type="number" min="0" max="99" inputmode="numeric" data-key="${match.key}" data-side="home" value="${result.home ?? 0}">
-        <span class="score-separator">-</span>
-        <input class="score-input" type="number" min="0" max="99" inputmode="numeric" data-key="${match.key}" data-side="away" value="${result.away ?? 0}">
-      </div>
-      <div class="match-team match-team-right">
-        <span>${match.team2}</span>
-        <span class="team-flag ${getTeamFlagClass(match.team2)}"></span>
-      </div>
-    `;
-    list.appendChild(row);
-  });
-
-  function redrawStandings() {
-    const tmp = JSON.parse(JSON.stringify(state.groupMatches[group] || {}));
-    viewer.querySelectorAll('.score-input').forEach(input => {
-      if (!tmp[input.dataset.key]) tmp[input.dataset.key] = { home: null, away: null };
-      tmp[input.dataset.key][input.dataset.side] = parseGoalValue(input.value);
+  function redraw() {
+    list.innerHTML = '';
+    draft.forEach((team, idx) => {
+      const fate = fateLabel(idx);
+      const row = document.createElement('div');
+      row.className = 'group-team pos-' + (idx + 1) + (idx === 3 ? ' eliminated' : '') + (idx === 2 ? ' qualified-third' : '');
+      row.dataset.index = String(idx);
+      row.innerHTML = `
+        <span class="position-badge">${idx + 1}</span>
+        <span class="team-flag ${getTeamFlagClass(team)}"></span>
+        <span class="team-name">${escapeHtml(team)}</span>
+        <span class="group-team-fate ${fate.cls}">${fate.txt}</span>
+        <span class="move-btns">
+          <button type="button" class="move-up" aria-label="Subir" ${idx === 0 ? 'disabled' : ''}>▲</button>
+          <button type="button" class="move-down" aria-label="Bajar" ${idx === draft.length - 1 ? 'disabled' : ''}>▼</button>
+        </span>
+      `;
+      list.appendChild(row);
     });
 
-    const old = state.groupMatches[group];
-    state.groupMatches[group] = tmp;
-    const freshStandings = calculateGroupStandings(group);
-    state.groupMatches[group] = old;
+    list.querySelectorAll('.move-up').forEach((btn, idx) => {
+      btn.addEventListener('click', () => {
+        draft = moveArrayItem(draft, idx, idx - 1);
+        redraw();
+      });
+    });
+    list.querySelectorAll('.move-down').forEach((btn, idx) => {
+      btn.addEventListener('click', () => {
+        draft = moveArrayItem(draft, idx, idx + 1);
+        redraw();
+      });
+    });
 
-    const standingsDiv = viewer.querySelector('.group-modal-standings');
-    standingsDiv.innerHTML = '';
-
-    freshStandings.forEach((row, idx) => {
-      const item = document.createElement('div');
-      item.className = 'group-team pos-' + (idx + 1) + (idx >= 3 ? ' eliminated' : '');
-      item.innerHTML = `
-        <span class="position-badge">${idx + 1}</span>
-        <span class="team-flag ${getTeamFlagClass(row.team)}"></span>
-        <span class="team-name">${row.team}</span>
-        <span class="standings-mini">${row.pts} pts · ${row.gf}-${row.ga}</span>
-      `;
-      standingsDiv.appendChild(item);
+    attachSortable(list, '.group-team', (fromIdx, toIdx) => {
+      draft = moveArrayItem(draft, fromIdx, toIdx);
+      redraw();
     });
   }
 
-  viewer.querySelectorAll('.score-input').forEach(input => input.addEventListener('input', redrawStandings));
-  redrawStandings();
+  redraw();
 
   document.getElementById('cancelGroupResults').addEventListener('click', closePredictionModal);
   document.getElementById('saveGroupResults').addEventListener('click', () => {
+    const previousMatchTeams = cloneMatchTeamsSnapshot();
+    state.groups[group] = draft.slice();
+    state.groupsConfirmed[group] = true;
+    ensureThirdPlaceRanking();
     buildTPAllocation();
     computeMatchTeams();
-    const previousMatchTeams = cloneMatchTeamsSnapshot();
-
-    viewer.querySelectorAll('.score-input').forEach(input => {
-      if (!state.groupMatches[group][input.dataset.key]) {
-        state.groupMatches[group][input.dataset.key] = { home: null, away: null };
-      }
-      state.groupMatches[group][input.dataset.key][input.dataset.side] = parseGoalValue(input.value);
-    });
-
-    updateGroupOrderFromMatches(group);
     cleanupKnockoutAfterGroupChange(previousMatchTeams);
     closePredictionModal();
     renderAll();
@@ -1062,83 +1063,58 @@ function fireConfetti() {
 
 // ---- Render Group Stage ----
 function renderGroups() {
-  ensureAllGroupMatches();
-  syncAutoThirdPlace();
+  ensureGroupsInitialized();
 
   const grid = document.getElementById('groupsGrid');
   grid.innerHTML = '';
-  const autoThirds = new Set(state.thirdPlace);
+  const qualifiedThirds = new Set(getQualifiedThirdPlaceTeams());
 
   GROUP_NAMES.forEach(g => {
     const complete = isGroupComplete(g);
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'group-card group-card-clickable' + (complete ? ' group-complete' : ' group-empty');
-    card.title = complete ? 'Editar resultados del grupo ' + g : 'Meter resultados del grupo ' + g;
+    card.title = complete ? 'Editar orden del grupo ' + g : 'Predecir orden del grupo ' + g;
 
     const h3 = document.createElement('h3');
     h3.textContent = 'Group ' + g;
     card.appendChild(h3);
 
-    const originalTeams = (TEAMS_BY_GROUP[g] || []).map(t => t.name);
+    const standings = calculateGroupStandings(g);
+    standings.forEach((stat, idx) => {
+      const team = stat.team;
+      const isThird = idx === 2;
+      const isFourth = idx === 3;
+      const thirdQualified = complete && state.thirdPlaceConfirmed && qualifiedThirds.has(team);
+      const eliminated = isFourth || (isThird && complete && state.thirdPlaceConfirmed && !qualifiedThirds.has(team));
 
-    if (!complete) {
-      const empty = document.createElement('div');
-      empty.className = 'group-empty-preview';
+      const row = document.createElement('div');
+      row.className =
+        'group-team pos-' + (idx + 1) +
+        (eliminated ? ' eliminated' : '') +
+        (isThird && thirdQualified ? ' qualified-third' : '') +
+        (!complete ? ' group-team-unconfirmed' : '');
 
-      const flags = document.createElement('div');
-      flags.className = 'group-empty-flags';
+      const badge = document.createElement('span');
+      badge.className = 'position-badge';
+      badge.textContent = idx + 1;
+      row.appendChild(badge);
 
-      originalTeams.forEach(team => {
-        const flagBox = document.createElement('span');
-        flagBox.className = 'group-empty-flag-box';
-        flagBox.title = team;
-        flagBox.innerHTML = '<span class="team-flag ' + getTeamFlagClass(team) + '"></span>';
-        flags.appendChild(flagBox);
-      });
+      const flag = document.createElement('span');
+      flag.className = 'team-flag ' + getTeamFlagClass(team);
+      row.appendChild(flag);
 
-      empty.appendChild(flags);
-      card.appendChild(empty);
-    } else {
-      const standings = calculateGroupStandings(g);
-      standings.forEach((stat, idx) => {
-        const team = stat.team;
-        const isThird = idx === 2;
-        const isFourth = idx === 3;
-        const eliminated = isFourth || (isThird && !autoThirds.has(team));
+      const name = document.createElement('span');
+      name.className = 'team-name';
+      name.textContent = team;
+      row.appendChild(name);
 
-        const row = document.createElement('div');
-        row.className =
-          'group-team pos-' + (idx + 1) +
-          (eliminated ? ' eliminated' : '') +
-          (isThird && autoThirds.has(team) ? ' qualified-third' : '');
-
-        const badge = document.createElement('span');
-        badge.className = 'position-badge';
-        badge.textContent = idx + 1;
-        row.appendChild(badge);
-
-        const flag = document.createElement('span');
-        flag.className = 'team-flag ' + getTeamFlagClass(team);
-        row.appendChild(flag);
-
-        const name = document.createElement('span');
-        name.className = 'team-name';
-        name.textContent = team;
-        row.appendChild(name);
-
-        const points = document.createElement('span');
-        points.className = 'group-points';
-        points.textContent = stat.pts + 'p';
-        row.appendChild(points);
-
-        card.appendChild(row);
-      });
-    }
+      card.appendChild(row);
+    });
 
     const hint = document.createElement('div');
     hint.className = 'group-card-hint';
-    hint.textContent = complete ? 'Editar resultados' : 'Meter resultados';
+    hint.textContent = complete ? '✏️ Editar orden' : '👉 Ordenar grupo';
     card.appendChild(hint);
 
     card.addEventListener('click', () => openGroupResultsModal(g));
@@ -1146,17 +1122,134 @@ function renderGroups() {
   });
 }
 
-// ---- Render Third Place ----
+// ---- Render Best Thirds Panel ----
+function renderBestThirds() {
+  const container = document.getElementById('bestThirdsPanel');
+  if (!container) return;
+
+  ensureThirdPlaceRanking();
+  container.innerHTML = '';
+
+  const allConfirmed = GROUP_NAMES.every(g => isGroupComplete(g));
+  const candidates = getAllThirdPlaceCandidates();
+
+  if (!allConfirmed || candidates.length < GROUP_NAMES.length) {
+    const note = document.createElement('p');
+    note.className = 'note-text best-thirds-note';
+    note.innerHTML = `Confirma el orden de los <strong>${GROUP_NAMES.length}</strong> grupos para poder ordenar los mejores terceros (ahora mismo confirmados: <strong>${GROUP_NAMES.filter(isGroupComplete).length}/${GROUP_NAMES.length}</strong>).`;
+    container.appendChild(note);
+    return;
+  }
+
+  const panel = document.createElement('div');
+  panel.className = 'best-thirds-panel';
+  panel.innerHTML = `
+    <div class="best-thirds-status">
+      ${state.thirdPlaceConfirmed
+        ? '<span class="best-thirds-confirmed">✅ Ranking confirmado</span>'
+        : '<span class="best-thirds-pending">⚠️ Pendiente de confirmar — arrastra los equipos y pulsa "Confirmar".</span>'}
+    </div>
+    <div class="best-thirds-list" id="bestThirdsList"></div>
+    <div class="best-thirds-actions">
+      <button type="button" class="toolbar-btn" id="bestThirdsAutoBtn">⚡ Orden automático (ranking FIFA)</button>
+      <button type="button" class="submit-btn" id="bestThirdsConfirmBtn">✅ Confirmar ranking</button>
+    </div>
+  `;
+  container.appendChild(panel);
+
+  const list = panel.querySelector('#bestThirdsList');
+  const groupByTeam = {};
+  candidates.forEach(c => { groupByTeam[c.team] = c.group; });
+
+  function renderList() {
+    list.innerHTML = '';
+    state.thirdPlace.forEach((team, idx) => {
+      const qualifies = idx < 8;
+      const row = document.createElement('div');
+      row.className = 'best-third-row' + (qualifies ? ' best-third-qualified' : ' best-third-eliminated');
+      row.dataset.team = team;
+      row.innerHTML = `
+        <span class="best-third-rank">${idx + 1}</span>
+        <span class="best-third-status">${qualifies ? '✅' : '❌'}</span>
+        <span class="team-flag ${getTeamFlagClass(team)}"></span>
+        <span class="best-third-name">${escapeHtml(team)}</span>
+        <span class="best-third-group">(3º Grupo ${groupByTeam[team] || '?'})</span>
+        <span class="move-btns">
+          <button type="button" class="move-up" aria-label="Subir" ${idx === 0 ? 'disabled' : ''}>▲</button>
+          <button type="button" class="move-down" aria-label="Bajar" ${idx === state.thirdPlace.length - 1 ? 'disabled' : ''}>▼</button>
+        </span>
+      `;
+      list.appendChild(row);
+    });
+
+    list.querySelectorAll('.move-up').forEach((btn, idx) => {
+      btn.addEventListener('click', () => {
+        state.thirdPlace = moveArrayItem(state.thirdPlace, idx, idx - 1);
+        state.thirdPlaceConfirmed = false;
+        renderAll();
+        saveLocalPredictionSoon();
+      });
+    });
+    list.querySelectorAll('.move-down').forEach((btn, idx) => {
+      btn.addEventListener('click', () => {
+        state.thirdPlace = moveArrayItem(state.thirdPlace, idx, idx + 1);
+        state.thirdPlaceConfirmed = false;
+        renderAll();
+        saveLocalPredictionSoon();
+      });
+    });
+
+    attachSortable(list, '.best-third-row', (fromIdx, toIdx) => {
+      const previousMatchTeams = cloneMatchTeamsSnapshot();
+      state.thirdPlace = moveArrayItem(state.thirdPlace, fromIdx, toIdx);
+      state.thirdPlaceConfirmed = false;
+      buildTPAllocation();
+      computeMatchTeams();
+      cleanupKnockoutAfterGroupChange(previousMatchTeams);
+      renderAll();
+      saveLocalPredictionSoon();
+    });
+  }
+
+  renderList();
+
+  panel.querySelector('#bestThirdsAutoBtn').addEventListener('click', () => {
+    const previousMatchTeams = cloneMatchTeamsSnapshot();
+    state.thirdPlace = candidates
+      .slice()
+      .sort(compareBestThirdsByRanking)
+      .map(c => c.team);
+    state.thirdPlaceConfirmed = false;
+    buildTPAllocation();
+    computeMatchTeams();
+    cleanupKnockoutAfterGroupChange(previousMatchTeams);
+    renderAll();
+    saveLocalPredictionSoon();
+  });
+
+  panel.querySelector('#bestThirdsConfirmBtn').addEventListener('click', () => {
+    const previousMatchTeams = cloneMatchTeamsSnapshot();
+    state.thirdPlaceConfirmed = true;
+    buildTPAllocation();
+    computeMatchTeams();
+    cleanupKnockoutAfterGroupChange(previousMatchTeams);
+    renderAll();
+    saveLocalPredictionSoon();
+    showToast('Mejores terceros confirmados.');
+  });
+}
+
+// ---- Render Third Place (legacy compact summary, optional) ----
 function renderThirdPlace() {
   const container = document.getElementById('thirdPlacePicks');
   if (!container) return;
 
-  syncAutoThirdPlace();
+  ensureThirdPlaceRanking();
   container.innerHTML = '';
 
-  const picked = state.thirdPlace.filter(Boolean);
+  const picked = getQualifiedThirdPlaceTeams();
   if (picked.length === 0) {
-    container.innerHTML = '<p class="note-text">Se calcularán solos cuando metas todos los resultados de grupos.</p>';
+    container.innerHTML = '<p class="note-text">Aparecerán aquí cuando confirmes el orden de todos los grupos.</p>';
     return;
   }
 
@@ -1609,21 +1702,52 @@ function clearKnockoutAndRender(team) {
 }
 
 // ---- Awards ----
-const AWARD_SELECT_IDS = ['awardGb1', 'awardGb2', 'awardGb3', 'awardBa1', 'awardBa2', 'awardBa3'];
+
+function getAwardConfigBySelectId(id) {
+  return AWARDS_CONFIG.find(a => a.selectId === id) || null;
+}
+
+function getAwardConfigByKey(key) {
+  return AWARDS_CONFIG.find(a => a.key === key) || null;
+}
 
 function getPlayerByName(name) {
   return AWARD_PLAYERS.find(p => p.name === name) || null;
 }
 
-function awardDisplayHtml(value) {
-  const player = getPlayerByName(value);
-  if (!player) return '<span class="award-placeholder">---</span>';
+function getAllTeamsFlat() {
+  const list = [];
+  GROUP_NAMES.forEach(g => {
+    (TEAMS_BY_GROUP[g] || []).forEach(t => list.push({ name: t.name, group: g }));
+  });
+  return list.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+}
 
+function awardOptionInnerHtml(kind, value) {
+  if (!value) return '<span class="award-placeholder">---</span><span class="award-player-country">Sin elegir</span>';
+
+  if (kind === 'player') {
+    const player = getPlayerByName(value);
+    if (!player) {
+      return `<span class="award-player-name">${escapeHtml(value)}</span>`;
+    }
+    return `
+      <span class="team-flag ${getFlagClass(player.country)}"></span>
+      <span class="award-player-name">${escapeHtml(player.name)}</span>
+      <span class="award-player-country">${escapeHtml(player.country)}</span>
+    `;
+  }
+
+  // team
   return `
-    <span class="team-flag ${getFlagClass(player.country)}"></span>
-    <span class="award-player-name">${escapeHtml(player.name)}</span>
-    <span class="award-player-country">${escapeHtml(player.country)}</span>
+    <span class="team-flag ${getTeamFlagClass(value)}"></span>
+    <span class="award-player-name">${escapeHtml(value)}</span>
   `;
+}
+
+function awardDisplayHtml(kind, value) {
+  if (!value) return '<span class="award-placeholder">---</span>';
+  return awardOptionInnerHtml(kind, value);
 }
 
 function ensureAwardPickerModal() {
@@ -1637,7 +1761,7 @@ function ensureAwardPickerModal() {
   overlay.innerHTML = `
     <div class="award-picker-modal" role="dialog" aria-modal="true">
       <button type="button" class="prediction-modal-close award-picker-close" aria-label="Cerrar">×</button>
-      <h3 id="awardPickerTitle">Elegir jugador</h3>
+      <h3 id="awardPickerTitle">Elegir</h3>
       <div class="award-picker-list" id="awardPickerList"></div>
     </div>
   `;
@@ -1669,7 +1793,9 @@ function openAwardPickerModal(select) {
   const overlay = ensureAwardPickerModal();
   const list = overlay.querySelector('#awardPickerList');
   const title = overlay.querySelector('#awardPickerTitle');
-  const label = select.closest('.award-row')?.querySelector('label')?.textContent?.trim() || 'Elegir jugador';
+  const cfg = getAwardConfigBySelectId(select.id);
+  if (!cfg) return;
+  const label = select.closest('.award-row')?.querySelector('label')?.textContent?.trim() || cfg.label;
   const currentValue = select.value || '';
 
   overlay.dataset.selectId = select.id;
@@ -1683,18 +1809,33 @@ function openAwardPickerModal(select) {
   empty.innerHTML = '<span class="award-placeholder">---</span><span class="award-player-country">Sin elegir</span>';
   list.appendChild(empty);
 
-  AWARD_PLAYERS.forEach(player => {
-    const option = document.createElement('button');
-    option.type = 'button';
-    option.className = 'award-picker-option' + (currentValue === player.name ? ' selected' : '');
-    option.dataset.value = player.name;
-    option.innerHTML = `
-      <span class="team-flag ${getFlagClass(player.country)}"></span>
-      <span class="award-player-name">${escapeHtml(player.name)}</span>
-      <span class="award-player-country">${escapeHtml(player.country)}</span>
-    `;
-    list.appendChild(option);
-  });
+  if (cfg.kind === 'player') {
+    AWARD_PLAYERS.forEach(player => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'award-picker-option' + (currentValue === player.name ? ' selected' : '');
+      option.dataset.value = player.name;
+      option.innerHTML = `
+        <span class="team-flag ${getFlagClass(player.country)}"></span>
+        <span class="award-player-name">${escapeHtml(player.name)}</span>
+        <span class="award-player-country">${escapeHtml(player.country)}</span>
+      `;
+      list.appendChild(option);
+    });
+  } else {
+    getAllTeamsFlat().forEach(team => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'award-picker-option' + (currentValue === team.name ? ' selected' : '');
+      option.dataset.value = team.name;
+      option.innerHTML = `
+        <span class="team-flag ${getTeamFlagClass(team.name)}"></span>
+        <span class="award-player-name">${escapeHtml(team.name)}</span>
+        <span class="award-player-country">Grupo ${team.group}</span>
+      `;
+      list.appendChild(option);
+    });
+  }
 
   list.onclick = e => {
     const option = e.target.closest('.award-picker-option');
@@ -1715,6 +1856,9 @@ function openAwardPickerModal(select) {
 }
 
 function buildAwardCustomSelect(select) {
+  const cfg = getAwardConfigBySelectId(select.id);
+  if (!cfg) return;
+
   let wrap = select.nextElementSibling;
   if (!wrap || !wrap.classList || !wrap.classList.contains('award-custom')) {
     wrap = document.createElement('div');
@@ -1729,7 +1873,7 @@ function buildAwardCustomSelect(select) {
   select.classList.add('award-native-hidden');
 
   const trigger = wrap.querySelector('.award-custom-trigger');
-  trigger.innerHTML = awardDisplayHtml(select.value);
+  trigger.innerHTML = awardDisplayHtml(cfg.kind, select.value);
 
   if (!wrap.dataset.bound) {
     wrap.dataset.bound = '1';
@@ -1742,19 +1886,28 @@ function buildAwardCustomSelect(select) {
 }
 
 function renderAwardSelects() {
-  AWARD_SELECT_IDS.forEach(id => {
-    const select = document.getElementById(id);
+  AWARDS_CONFIG.forEach(cfg => {
+    const select = document.getElementById(cfg.selectId);
     if (!select) return;
 
     const currentValue = select.value;
     select.innerHTML = '<option value="">---</option>';
 
-    AWARD_PLAYERS.forEach(player => {
-      const option = document.createElement('option');
-      option.value = player.name;
-      option.textContent = `${player.name} — ${player.country}`;
-      select.appendChild(option);
-    });
+    if (cfg.kind === 'player') {
+      AWARD_PLAYERS.forEach(player => {
+        const option = document.createElement('option');
+        option.value = player.name;
+        option.textContent = `${player.name} — ${player.country}`;
+        select.appendChild(option);
+      });
+    } else {
+      getAllTeamsFlat().forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.name;
+        option.textContent = `${team.name} (Grupo ${team.group})`;
+        select.appendChild(option);
+      });
+    }
 
     select.value = currentValue || '';
     buildAwardCustomSelect(select);
@@ -1762,48 +1915,34 @@ function renderAwardSelects() {
 }
 
 function syncAwardCustomSelects() {
-  AWARD_SELECT_IDS.forEach(id => {
-    const select = document.getElementById(id);
+  AWARDS_CONFIG.forEach(cfg => {
+    const select = document.getElementById(cfg.selectId);
     if (!select) return;
     const wrap = select.nextElementSibling;
     if (!wrap || !wrap.classList.contains('award-custom')) return;
 
     const trigger = wrap.querySelector('.award-custom-trigger');
-    if (trigger) trigger.innerHTML = awardDisplayHtml(select.value);
+    if (trigger) trigger.innerHTML = awardDisplayHtml(cfg.kind, select.value);
   });
 }
 
 function readAwards() {
-  return {
-    goldenBoot: [
-      document.getElementById('awardGb1')?.value || '',
-      document.getElementById('awardGb2')?.value || '',
-      document.getElementById('awardGb3')?.value || ''
-    ],
-    goldenBall: [
-      document.getElementById('awardBa1')?.value || '',
-      document.getElementById('awardBa2')?.value || '',
-      document.getElementById('awardBa3')?.value || ''
-    ]
-  };
+  const out = {};
+  AWARDS_CONFIG.forEach(cfg => {
+    out[cfg.key] = document.getElementById(cfg.selectId)?.value || '';
+  });
+  return out;
 }
 
 function fillAwards(a) {
   renderAwardSelects();
-
   if (!a) return;
 
-  if (a.goldenBoot) {
-    document.getElementById('awardGb1').value = a.goldenBoot[0] || '';
-    document.getElementById('awardGb2').value = a.goldenBoot[1] || '';
-    document.getElementById('awardGb3').value = a.goldenBoot[2] || '';
-  }
-
-  if (a.goldenBall) {
-    document.getElementById('awardBa1').value = a.goldenBall[0] || '';
-    document.getElementById('awardBa2').value = a.goldenBall[1] || '';
-    document.getElementById('awardBa3').value = a.goldenBall[2] || '';
-  }
+  AWARDS_CONFIG.forEach(cfg => {
+    const el = document.getElementById(cfg.selectId);
+    if (!el) return;
+    el.value = (a && typeof a === 'object' && typeof a[cfg.key] === 'string') ? a[cfg.key] : '';
+  });
 
   syncAwardCustomSelects();
 }
@@ -1845,8 +1984,9 @@ function buildPayload() {
 
   return {
     groups: JSON.parse(JSON.stringify(state.groups)),
-    groupMatches: JSON.parse(JSON.stringify(state.groupMatches)),
+    groupsConfirmed: { ...(state.groupsConfirmed || {}) },
     thirdPlace: state.thirdPlace.filter(Boolean),
+    thirdPlaceConfirmed: Boolean(state.thirdPlaceConfirmed),
     knockout: {
       round32: winners(r32nums),
       round16: winners(r16nums),
@@ -1887,31 +2027,6 @@ function getResultOutcome(home, away) {
   if (home > away) return 'home';
   if (away > home) return 'away';
   return 'draw';
-}
-
-function getMatchResultFromMap(matchMap, match) {
-  if (!matchMap || !match) return {};
-
-  const sortedKey = match.key || groupMatchKey(match.team1, match.team2);
-  const directKey = `${match.team1}__${match.team2}`;
-  const reverseKey = `${match.team2}__${match.team1}`;
-
-  return matchMap[sortedKey] || matchMap[directKey] || matchMap[reverseKey] || {};
-}
-
-function normalizeGroupMatchesForStandings(groupMatches = {}) {
-  const normalized = {};
-
-  GROUP_NAMES.forEach(group => {
-    const source = groupMatches[group] || {};
-    normalized[group] = {};
-
-    getGroupMatchList(group).forEach(match => {
-      normalized[group][match.key] = getMatchResultFromMap(source, match);
-    });
-  });
-
-  return normalized;
 }
 
 function sameTeamSet(a, b) {
@@ -2062,44 +2177,25 @@ function scorePrediction(prediction, results = RESULTS) {
     if (predictionResultStatus(predGroup[0], realGroup[0]) === 'correct') score += puntuaciones.grupos.posicion.primero;
     if (predictionResultStatus(predGroup[1], realGroup[1]) === 'correct') score += puntuaciones.grupos.posicion.segundo;
     if (predictionResultStatus(predGroup[2], realGroup[2]) === 'correct') score += puntuaciones.grupos.posicion.tercero;
-
-    const predMatches = prediction.groupMatches?.[group] || {};
-    const realMatches = results.groupMatches?.[group] || {};
-
-    getGroupMatchList(group).forEach(match => {
-      const pred = getMatchResultFromMap(predMatches, match);
-      const real = getMatchResultFromMap(realMatches, match);
-      const ph = parseGoalValue(pred.home);
-      const pa = parseGoalValue(pred.away);
-      const rh = parseGoalValue(real.home);
-      const ra = parseGoalValue(real.away);
-
-      if (ph === null || pa === null || rh === null || ra === null) return;
-
-      if (ph === rh && pa === ra) score += puntuaciones.grupos.partido.resultadoExacto;
-      else if (getResultOutcome(ph, pa) === getResultOutcome(rh, ra)) score += puntuaciones.grupos.partido.ganadorEmpateCorrecto;
-    });
   });
 
-  // Third-place qualification is intentionally NOT scored here.
-  // It is already reflected by the knockout-stage points if that team reaches
-  // the round of 32, so group-stage scoring only rewards exact group positions.
+  // Mejores terceros: 1 punto por cada equipo que el usuario haya clasificado
+  // (top 8 de su orden) y que también esté en el top 8 real.
+  const predThirdsTop8 = (prediction.thirdPlace || []).filter(Boolean).slice(0, 8);
+  const realThirdsTop8 = new Set((results.thirdPlace || []).filter(Boolean).slice(0, 8));
+  predThirdsTop8.forEach(team => {
+    if (realThirdsTop8.has(team)) score += puntuaciones.grupos.mejorTercero;
+  });
 
   score += getKnockoutScoreBreakdown(prediction, results);
 
-  const predBoot = prediction.awards?.goldenBoot || [];
-  const realBoot = results.awards?.goldenBoot || [];
-
-  if (realBoot[0] && predBoot[0] === realBoot[0]) score += puntuaciones.premios.goldenBoot[0];
-  if (realBoot[1] && predBoot[1] === realBoot[1]) score += puntuaciones.premios.goldenBoot[1];
-  if (realBoot[2] && predBoot[2] === realBoot[2]) score += puntuaciones.premios.goldenBoot[2];
-
-  const predBall = prediction.awards?.goldenBall || [];
-  const realBall = results.awards?.goldenBall || [];
-
-  if (realBall[0] && predBall[0] === realBall[0]) score += puntuaciones.premios.goldenBall[0];
-  if (realBall[1] && predBall[1] === realBall[1]) score += puntuaciones.premios.goldenBall[1];
-  if (realBall[2] && predBall[2] === realBall[2]) score += puntuaciones.premios.goldenBall[2];
+  const predAwards = prediction.awards || {};
+  const realAwards = results.awards || {};
+  AWARDS_CONFIG.forEach(cfg => {
+    const real = realAwards[cfg.key];
+    const pred = predAwards[cfg.key];
+    if (real && pred && real === pred) score += cfg.points;
+  });
 
   return score;
 }
@@ -2232,12 +2328,12 @@ function openScoringHelpModal() {
         <div class="scoring-help-card">
           <h4>🌍 Fase de grupos</h4>
           <ul>
-            <li>Resultado exacto de partido: <strong>${puntuaciones.grupos.partido.resultadoExacto} pts</strong></li>
-            <li>Ganador/empate correcto: <strong>${puntuaciones.grupos.partido.ganadorEmpateCorrecto} pt</strong></li>
-            <li>1º exacto de grupo: <strong>${puntuaciones.grupos.posicion.primero} pts</strong></li>
-            <li>2º exacto de grupo: <strong>${puntuaciones.grupos.posicion.segundo} pts</strong></li>
-            <li>3º exacto de grupo: <strong>${puntuaciones.grupos.posicion.tercero} pt</strong></li>
+            <li>Acertar 1º exacto de grupo: <strong>${puntuaciones.grupos.posicion.primero} pts</strong></li>
+            <li>Acertar 2º exacto de grupo: <strong>${puntuaciones.grupos.posicion.segundo} pts</strong></li>
+            <li>Acertar 3º exacto de grupo: <strong>${puntuaciones.grupos.posicion.tercero} pts</strong></li>
+            <li>Cada mejor tercero (top 8) acertado: <strong>${puntuaciones.grupos.mejorTercero} pt</strong></li>
           </ul>
+          <p class="scoring-help-small">Solo se acierta arrastrando los equipos en el orden correcto. No hay marcadores exactos.</p>
         </div>
 
         <div class="scoring-help-card">
@@ -2254,10 +2350,9 @@ function openScoringHelpModal() {
         </div>
 
         <div class="scoring-help-card">
-          <h4>⭐ Premios individuales</h4>
+          <h4>⭐ Logros del Mundial</h4>
           <ul>
-            <li>Bota de Oro: <strong>${puntuaciones.premios.goldenBoot.join(' / ')} pts</strong></li>
-            <li>Balón de Oro: <strong>${puntuaciones.premios.goldenBall.join(' / ')} pts</strong></li>
+            ${AWARDS_CONFIG.map(cfg => `<li>${cfg.emoji} ${escapeHtml(cfg.label)}: <strong>${cfg.points} pts</strong></li>`).join('')}
           </ul>
         </div>
       </div>
@@ -2314,61 +2409,24 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-function withPredictionGroupMatches(prediction, fn) {
-  const oldGroupMatches = state.groupMatches;
-  state.groupMatches = normalizeGroupMatchesForStandings(prediction.groupMatches || {});
-
-  try {
-    return fn();
-  } finally {
-    state.groupMatches = oldGroupMatches;
-  }
+function getPredictionGroupOrder(prediction, group) {
+  const order = prediction.groups?.[group] || [];
+  const teams = (TEAMS_BY_GROUP[group] || []).map(t => t.name);
+  const valid = order.filter(t => teams.includes(t));
+  const missing = teams.filter(t => !valid.includes(t));
+  return [...valid, ...missing];
 }
 
-function calculatePredictionGroupStandings(group, prediction) {
-  return withPredictionGroupMatches(prediction, () => calculateGroupStandings(group));
+function getPredictionStandingReviewClass(team, predIdx, realOrder) {
+  if (!Array.isArray(realOrder) || realOrder.length === 0) return ' review-pending';
+  const realIdx = realOrder.indexOf(team);
+  if (realIdx === -1) return ' review-wrong';
+  return predIdx === realIdx ? ' review-correct' : ' review-partial';
 }
 
-
-function calculateRealGroupStandingsFromResults(group) {
-  return withPredictionGroupMatches({ groupMatches: RESULTS.groupMatches || {} }, () => calculateGroupStandings(group));
-}
-
-function getQualifiedTeamsFromOrder(order, thirdsSet) {
-  return new Set((order || []).filter((team, idx) => idx < 2 || (idx === 2 && thirdsSet.has(team))));
-}
-
-function getPredictionStandingReviewClass(team, predIdx, predOrder, predThirds, realOrder, realThirds) {
-  const predQualified = getQualifiedTeamsFromOrder(predOrder, predThirds).has(team);
-  const realQualified = getQualifiedTeamsFromOrder(realOrder, realThirds).has(team);
-  const realIdx = (realOrder || []).indexOf(team);
-
-  // Visual rule: eliminated teams must look eliminated.
-  // Before this, a 3rd-place team that did NOT qualify could still become green
-  // when both prediction and real result agreed it was eliminated. That made the
-  // leaderboard misleading: the row looked like a qualified/correct pick.
-  if (!predQualified) return ' review-wrong';
-
-  if (predQualified && realQualified) {
-    return predIdx === realIdx ? ' review-correct' : ' review-partial';
-  }
-
-  return ' review-wrong';
-}
-
-
-function getGroupMatchReviewPoints(ph, pa, rh, ra) {
-  if (ph === null || pa === null || rh === null || ra === null) return 0;
-  if (ph === rh && pa === ra) return puntuaciones.grupos.partido.resultadoExacto;
-  return getResultOutcome(ph, pa) === getResultOutcome(rh, ra) ? puntuaciones.grupos.partido.ganadorEmpateCorrecto : 0;
-}
-
-function getPredictedGroupPositionPoints(team, idx, autoThirds, realOrder, realThirds) {
-  // Group-stage position points are ONLY for exact positions.
-  // No extra points for correctly predicting a best third: that is counted
-  // later in the knockout bracket when the team appears in round of 32.
-  if (predictionResultStatus(team, realOrder[idx]) !== 'correct') return 0;
-
+function getPredictedGroupPositionPoints(team, idx, realOrder) {
+  if (!Array.isArray(realOrder) || realOrder.length === 0) return 0;
+  if (realOrder[idx] !== team) return 0;
   if (idx === 0) return puntuaciones.grupos.posicion.primero;
   if (idx === 1) return puntuaciones.grupos.posicion.segundo;
   if (idx === 2) return puntuaciones.grupos.posicion.tercero;
@@ -2376,32 +2434,17 @@ function getPredictedGroupPositionPoints(team, idx, autoThirds, realOrder, realT
 }
 
 function calculateGroupReviewTotalPoints(group, prediction) {
-  const matches = getGroupMatchList(group);
-  const predMatches = prediction.groupMatches?.[group] || {};
-  const realMatches = RESULTS.groupMatches?.[group] || {};
-
-  const matchPoints = matches.reduce((total, match) => {
-    const pred = getMatchResultFromMap(predMatches, match);
-    const real = getMatchResultFromMap(realMatches, match);
-
-    return total + getGroupMatchReviewPoints(
-      parseGoalValue(pred.home),
-      parseGoalValue(pred.away),
-      parseGoalValue(real.home),
-      parseGoalValue(real.away)
-    );
-  }, 0);
-
-  const standings = calculatePredictionGroupStandings(group, prediction);
   const realOrder = RESULTS.groups?.[group] || [];
-  const realThirds = new Set(RESULTS.thirdPlace || []);
-  const autoThirds = new Set(prediction.thirdPlace || []);
+  if (!realOrder.length) return 0;
+  const predOrder = getPredictionGroupOrder(prediction, group);
+  return predOrder.reduce((total, team, idx) => total + getPredictedGroupPositionPoints(team, idx, realOrder), 0);
+}
 
-  const positionPoints = standings.reduce((total, row, idx) => {
-    return total + getPredictedGroupPositionPoints(row.team, idx, autoThirds, realOrder, realThirds);
-  }, 0);
-
-  return matchPoints + positionPoints;
+function calculateThirdPlaceReviewPoints(prediction) {
+  const predTop8 = (prediction.thirdPlace || []).filter(Boolean).slice(0, 8);
+  const realTop8 = new Set((RESULTS.thirdPlace || []).filter(Boolean).slice(0, 8));
+  if (realTop8.size === 0) return 0;
+  return predTop8.reduce((total, team) => total + (realTop8.has(team) ? puntuaciones.grupos.mejorTercero : 0), 0);
 }
 
 function renderReviewPointsBadge(points, title = '') {
@@ -2409,24 +2452,24 @@ function renderReviewPointsBadge(points, title = '') {
   return `<span class="${cls}"${title ? ` title="${escapeHtml(title)}"` : ''}>+${points}pt</span>`;
 }
 
-function renderStandingRow({ team, idx, pts, gf, ga, statusClass, extraClass = '' }) {
+function renderStandingRow({ team, idx, statusClass, extraClass = '' }) {
   return `
     <div class="group-team pos-${idx + 1}${extraClass}${statusClass || ''}">
       <span class="position-badge">${idx + 1}</span>
       <span class="team-flag ${getTeamFlagClass(team)}"></span>
       <span class="team-name">${escapeHtml(team)}</span>
-      <span class="standings-mini">${pts} pts · ${gf}-${ga}</span>
     </div>
   `;
 }
 
 function isPredictionGroupComplete(group, prediction) {
-  const predMatches = prediction.groupMatches?.[group] || {};
-
-  return getGroupMatchList(group).every(match => {
-    const result = getMatchResultFromMap(predMatches, match);
-    return parseGoalValue(result.home) !== null && parseGoalValue(result.away) !== null;
-  });
+  // En el nuevo modelo basta con que el usuario haya enviado un orden con los
+  // 4 equipos del grupo (algo que siempre ocurre cuando se manda la quiniela).
+  const teams = (TEAMS_BY_GROUP[group] || []).map(t => t.name);
+  const order = prediction.groups?.[group] || [];
+  if (order.length < teams.length) return false;
+  const set = new Set(order);
+  return teams.every(t => set.has(t));
 }
 
 function renderReviewGroups(prediction, entry) {
@@ -2434,14 +2477,14 @@ function renderReviewGroups(prediction, entry) {
   container.className = 'groups-grid';
   container.innerHTML = '';
 
-  const autoThirds = new Set(prediction.thirdPlace || []);
+  const qualifiedThirdsPred = new Set((prediction.thirdPlace || []).slice(0, 8));
 
   GROUP_NAMES.forEach(g => {
     const complete = isPredictionGroupComplete(g, prediction);
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'group-card group-card-clickable review-group-card' + (complete ? ' group-complete' : ' group-empty');
-    card.title = 'Ver partidos del grupo ' + g;
+    card.title = 'Ver detalle del grupo ' + g;
 
     const header = document.createElement('div');
     header.className = 'review-group-card-header';
@@ -2450,69 +2493,46 @@ function renderReviewGroups(prediction, entry) {
     h3.textContent = 'Group ' + g;
     header.appendChild(h3);
 
-    const groupTotalPoints = complete ? calculateGroupReviewTotalPoints(g, prediction) : 0;
+    const groupTotalPoints = calculateGroupReviewTotalPoints(g, prediction);
     const totalBadge = document.createElement('span');
     totalBadge.className = 'review-group-total-points' + (groupTotalPoints > 0 ? ' got-points' : ' no-points');
     totalBadge.title = 'Total de puntos conseguidos en el grupo ' + g;
-    totalBadge.textContent = `+${groupTotalPoints}pt`; + (groupTotalPoints === 1 ? '' : 's');
+    totalBadge.textContent = `+${groupTotalPoints}pt`;
     header.appendChild(totalBadge);
 
     card.appendChild(header);
 
-    if (!complete) {
-      const empty = document.createElement('div');
-      empty.className = 'group-empty-preview';
+    const predOrder = getPredictionGroupOrder(prediction, g);
+    const realOrder = RESULTS.groups?.[g] || [];
 
-      const flags = document.createElement('div');
-      flags.className = 'group-empty-flags';
+    predOrder.forEach((team, idx) => {
+      const isThird = idx === 2;
+      const isFourth = idx === 3;
+      const qualifiedAsThird = isThird && qualifiedThirdsPred.has(team);
+      const eliminated = isFourth || (isThird && !qualifiedAsThird);
+      const statusClass = realOrder.length
+        ? getPredictionStandingReviewClass(team, idx, realOrder)
+        : ' review-pending';
 
-      (TEAMS_BY_GROUP[g] || []).forEach(teamObj => {
-        const team = teamObj.name;
-        const flagBox = document.createElement('span');
-        flagBox.className = 'group-empty-flag-box';
-        flagBox.title = team;
-        flagBox.innerHTML = '<span class="team-flag ' + getTeamFlagClass(team) + '"></span>';
-        flags.appendChild(flagBox);
-      });
+      const row = document.createElement('div');
+      row.className =
+        'group-team pos-' + (idx + 1) +
+        (eliminated ? ' eliminated' : '') +
+        (qualifiedAsThird ? ' qualified-third' : '') +
+        statusClass;
 
-      empty.appendChild(flags);
-      card.appendChild(empty);
-    } else {
-      const standings = calculatePredictionGroupStandings(g, prediction);
-      const predOrder = standings.map(row => row.team);
-      const realOrder = RESULTS.groups?.[g] || [];
-      const realThirds = new Set(RESULTS.thirdPlace || []);
+      row.innerHTML = `
+        <span class="position-badge">${idx + 1}</span>
+        <span class="team-flag ${getTeamFlagClass(team)}"></span>
+        <span class="team-name">${escapeHtml(team)}</span>
+      `;
 
-      standings.forEach((stat, idx) => {
-        const team = stat.team;
-        const isThird = idx === 2;
-        const isFourth = idx === 3;
-        const eliminated = isFourth || (isThird && !autoThirds.has(team));
-        const statusClass = realOrder.length
-          ? getPredictionStandingReviewClass(team, idx, predOrder, autoThirds, realOrder, realThirds)
-          : ' review-pending';
-
-        const row = document.createElement('div');
-        row.className =
-          'group-team pos-' + (idx + 1) +
-          (eliminated ? ' eliminated' : '') +
-          (isThird && autoThirds.has(team) ? ' qualified-third' : '') +
-          statusClass;
-
-        row.innerHTML = `
-          <span class="position-badge">${idx + 1}</span>
-          <span class="team-flag ${getTeamFlagClass(team)}"></span>
-          <span class="team-name">${escapeHtml(team)}</span>
-          <span class="group-total-points">${stat.pts} pts</span>
-        `;
-
-        card.appendChild(row);
-      });
-    }
+      card.appendChild(row);
+    });
 
     const hint = document.createElement('div');
     hint.className = 'group-card-hint';
-    hint.textContent = 'Ver partidos';
+    hint.textContent = 'Ver detalle';
     card.appendChild(hint);
 
     card.addEventListener('click', () => openReadOnlyGroupResultsModal(entry, g));
@@ -2523,23 +2543,17 @@ function renderReviewGroups(prediction, entry) {
 function openReadOnlyGroupResultsModal(entry, group) {
   const viewer = document.getElementById('predictionViewer');
   const prediction = entry.prediction;
-  const teams = (TEAMS_BY_GROUP[group] || []).map(t => t.name);
-  const matches = getGroupMatchList(group);
-  const predMatches = prediction.groupMatches?.[group] || {};
-  const realMatches = RESULTS.groupMatches?.[group] || {};
-  const standings = calculatePredictionGroupStandings(group, prediction);
-  const autoThirds = new Set(prediction.thirdPlace || []);
+  const predOrder = getPredictionGroupOrder(prediction, group);
+  const realOrder = RESULTS.groups?.[group] || [];
+  const qualifiedThirdsPred = new Set((prediction.thirdPlace || []).slice(0, 8));
+  const qualifiedThirdsReal = new Set((RESULTS.thirdPlace || []).slice(0, 8));
 
   viewer.innerHTML = `
     <div class="group-results-editor group-results-readonly">
       <button type="button" class="toolbar-btn review-back-btn" id="backToPredictionReview">← Volver a ${escapeHtml(entry.name)}</button>
       <h3>GRUPO ${group}</h3>
-      <div class="group-modal-team-grid"></div>
-      <div class="group-modal-divider"></div>
-      <h4 class="group-modal-section-title"><span>📅</span> PARTIDOS APOSTADOS</h4>
-      <div class="group-match-list"></div>
+      <p class="group-modal-subtitle">Solo lectura: orden apostado vs orden real.</p>
       <div class="group-live-standings-wrap">
-        <h4 class="group-modal-section-title"><span>🏆</span> CLASIFICACIÓN: APOSTADA VS REAL</h4>
         <div class="review-standings-compare review-standings-compare-with-points">
           <div class="review-standings-col">
             <div class="review-standings-label">Apostada</div>
@@ -2555,111 +2569,52 @@ function openReadOnlyGroupResultsModal(entry, group) {
           </div>
         </div>
       </div>
-      <div class="group-modal-info">Solo lectura: esto es lo que apostó en fase de grupos.</div>
     </div>
   `;
-
-  const teamGrid = viewer.querySelector('.group-modal-team-grid');
-  teams.forEach(team => {
-    const box = document.createElement('div');
-    box.className = 'group-modal-team-card';
-    box.innerHTML = `
-      <span class="team-flag ${getTeamFlagClass(team)}"></span>
-      <span>${escapeHtml(team)}</span>
-    `;
-    teamGrid.appendChild(box);
-  });
-
-  const list = viewer.querySelector('.group-match-list');
-  matches.forEach((match, index) => {
-    const pred = getMatchResultFromMap(predMatches, match);
-    const real = getMatchResultFromMap(realMatches, match);
-    const ph = parseGoalValue(pred.home);
-    const pa = parseGoalValue(pred.away);
-    const rh = parseGoalValue(real.home);
-    const ra = parseGoalValue(real.away);
-    const resolved = rh !== null && ra !== null;
-    const exact = resolved && ph === rh && pa === ra;
-    const outcome = resolved && ph !== null && pa !== null && getResultOutcome(ph, pa) === getResultOutcome(rh, ra);
-    const matchPoints = getGroupMatchReviewPoints(ph, pa, rh, ra);
-
-    const row = document.createElement('div');
-    row.className =
-      'group-match-row review-match-row' +
-      (exact ? ' review-correct' : '') +
-      (!exact && outcome ? ' review-partial' : '') +
-      (resolved && !outcome ? ' review-wrong' : '') +
-      (!resolved ? ' review-pending' : '');
-
-    row.innerHTML = `
-      <div class="match-date-badge">
-        <strong>${getMatchdayNumber(match, index)}</strong>
-        <span>${formatMatchDate(match)}</span>
-      </div>
-      <div class="match-team match-team-left">
-        <span class="team-flag ${getTeamFlagClass(match.team1)}"></span>
-        <span>${escapeHtml(match.team1)}</span>
-      </div>
-      <div class="match-score-controls readonly-score-controls">
-        <span class="readonly-score-box">${ph ?? 0}</span>
-        <span class="score-separator">-</span>
-        <span class="readonly-score-box">${pa ?? 0}</span>
-      </div>
-      <div class="match-team match-team-right">
-        <span>${escapeHtml(match.team2)}</span>
-        <span class="team-flag ${getTeamFlagClass(match.team2)}"></span>
-      </div>
-      <div class="review-match-points-box" title="Puntos de este partido">+${matchPoints}pt</div>
-      ${resolved ? `<div class="review-real-score">Real: ${rh}-${ra}</div>` : ''}
-    `;
-    list.appendChild(row);
-  });
 
   const predictedStandingsDiv = viewer.querySelector('#predictedGroupStandings');
   const positionPointsDiv = viewer.querySelector('#predictedGroupPositionPoints');
   const realStandingsDiv = viewer.querySelector('#realGroupStandings');
-  const realOrder = RESULTS.groups?.[group] || [];
-  const realThirds = new Set(RESULTS.thirdPlace || []);
-  const predOrder = standings.map(row => row.team);
 
-  predictedStandingsDiv.innerHTML = standings.map((row, idx) => {
+  predictedStandingsDiv.innerHTML = predOrder.map((team, idx) => {
     const isThird = idx === 2;
     const isFourth = idx === 3;
-    const eliminated = isFourth || (isThird && !autoThirds.has(row.team));
+    const qualifiedAsThird = isThird && qualifiedThirdsPred.has(team);
+    const eliminated = isFourth || (isThird && !qualifiedAsThird);
     const statusClass = realOrder.length
-      ? getPredictionStandingReviewClass(row.team, idx, predOrder, autoThirds, realOrder, realThirds)
+      ? getPredictionStandingReviewClass(team, idx, realOrder)
       : ' review-pending';
-
-    return renderStandingRow({
-      team: row.team,
-      idx,
-      pts: row.pts,
-      gf: row.gf,
-      ga: row.ga,
-      statusClass,
-      extraClass: (eliminated ? ' eliminated' : '') + (isThird && autoThirds.has(row.team) ? ' qualified-third' : '')
-    });
-  }).join('');
-
-  positionPointsDiv.innerHTML = standings.map((row, idx) => {
-    const points = getPredictedGroupPositionPoints(row.team, idx, autoThirds, realOrder, realThirds);
-    return `<div class="review-standing-points-row">${renderReviewPointsBadge(points, 'Puntos por esta posición')}</div>`;
-  }).join('');
-
-  realStandingsDiv.innerHTML = realOrder.map((team, idx) => {
-    const realRow = calculateRealGroupStandingsFromResults(group).find(stat => stat.team === team) || { team, pts: 0, gf: 0, ga: 0 };
-    const classified = idx < 2 || (idx === 2 && realThirds.has(team));
 
     return renderStandingRow({
       team,
       idx,
-      pts: realRow.pts,
-      gf: realRow.gf,
-      ga: realRow.ga,
-      statusClass: classified ? ' review-correct' : ' review-wrong',
-      extraClass: classified && idx === 2 ? ' qualified-third' : ' eliminated'
+      statusClass,
+      extraClass: (eliminated ? ' eliminated' : '') + (qualifiedAsThird ? ' qualified-third' : '')
     });
   }).join('');
+
+  positionPointsDiv.innerHTML = predOrder.map((team, idx) => {
+    const points = getPredictedGroupPositionPoints(team, idx, realOrder);
+    return `<div class="review-standing-points-row">${renderReviewPointsBadge(points, 'Puntos por esta posición')}</div>`;
+  }).join('');
+
+  if (realOrder.length) {
+    realStandingsDiv.innerHTML = realOrder.map((team, idx) => {
+      const isThird = idx === 2;
+      const isFourth = idx === 3;
+      const qualifiedAsThird = isThird && qualifiedThirdsReal.has(team);
+      const eliminated = isFourth || (isThird && !qualifiedAsThird);
+
+      return renderStandingRow({
+        team,
+        idx,
+        statusClass: '',
+        extraClass: (eliminated ? ' eliminated' : '') + (qualifiedAsThird ? ' qualified-third' : '')
+      });
+    }).join('');
+  } else {
+    realStandingsDiv.innerHTML = '<p class="note-text">Aún sin resultados oficiales.</p>';
+  }
 
   document.getElementById('backToPredictionReview').addEventListener('click', () => renderPredictionReview(entry));
 }
@@ -2670,7 +2625,6 @@ function buildKnockoutReviewState(source) {
 
   state.groups = JSON.parse(JSON.stringify(source.groups || {}));
   state.thirdPlace = [...(source.thirdPlace || [])];
-  state.groupMatches = JSON.parse(JSON.stringify(source.groupMatches || {}));
   state.knockoutResults = {};
   state.matchTeams = {};
 
@@ -2750,7 +2704,6 @@ function buildKnockoutReviewState(source) {
 
   state.groups = oldState.groups;
   state.thirdPlace = oldState.thirdPlace;
-  state.groupMatches = oldState.groupMatches;
   state.knockoutResults = oldState.knockoutResults;
   state.matchTeams = oldState.matchTeams;
   tpAllocation = oldTpAllocation;
@@ -3142,32 +3095,28 @@ function renderReviewAwards(prediction) {
   container.className = 'awards-section';
   container.innerHTML = '';
 
-  const rows = [
-    [`Bota de oro (${puntuaciones.premios.goldenBoot[0]}pt)`, prediction.awards?.goldenBoot?.[0], RESULTS.awards?.goldenBoot?.[0]],
-    [`Bota de plata (${puntuaciones.premios.goldenBoot[1]}pt)`, prediction.awards?.goldenBoot?.[1], RESULTS.awards?.goldenBoot?.[1]],
-    [`Bota de bronce(${puntuaciones.premios.goldenBoot[2]}pt)`, prediction.awards?.goldenBoot?.[2], RESULTS.awards?.goldenBoot?.[2]],
-    [`Balón de oro (${puntuaciones.premios.goldenBall[0]}pt)`, prediction.awards?.goldenBall?.[0], RESULTS.awards?.goldenBall?.[0]],
-    [`Balón de plata (${puntuaciones.premios.goldenBall[1]}pt)`, prediction.awards?.goldenBall?.[1], RESULTS.awards?.goldenBall?.[1]],
-    [`Balón de bronce (${puntuaciones.premios.goldenBall[2]}pt)`, prediction.awards?.goldenBall?.[2], RESULTS.awards?.goldenBall?.[2]]
-  ];
+  const predAwards = prediction.awards || {};
+  const realAwards = RESULTS.awards || {};
 
-  rows.forEach(([label, predicted, real]) => {
+  AWARDS_CONFIG.forEach(cfg => {
+    const predicted = typeof predAwards[cfg.key] === 'string' ? predAwards[cfg.key] : '';
+    const real = typeof realAwards[cfg.key] === 'string' ? realAwards[cfg.key] : '';
     const resolved = Boolean(real);
-    const correct = resolved && predicted === real;
+    const correct = resolved && predicted && predicted === real;
     const wrong = resolved && predicted !== real;
 
     const row = document.createElement('div');
     row.className =
-      'award-row' +
+      'award-row review-award-row' +
       (correct ? ' review-correct' : '') +
       (wrong ? ' review-wrong' : '') +
       (!resolved ? ' review-pending' : '');
 
     row.innerHTML = `
-      <label>${label}:</label>
-      <div class="award-select" style="cursor:default;">
-        ${predicted || '---'}
-        ${resolved ? `<small style="display:block;font-weight:700;">Actual: ${real}</small>` : ''}
+      <label>${cfg.emoji} ${escapeHtml(cfg.label)} (${cfg.points}pt):</label>
+      <div class="award-select review-award-display">
+        ${awardDisplayHtml(cfg.kind, predicted)}
+        ${resolved ? `<small class="review-award-real">Real: ${awardDisplayHtml(cfg.kind, real)}</small>` : ''}
       </div>
     `;
 
@@ -3291,6 +3240,7 @@ function renderAll() {
   buildTPAllocation();
   computeMatchTeams();
   renderGroups();
+  renderBestThirds();
   renderThirdPlace();
   renderBracket();
   renderAwardSelects();
@@ -3302,23 +3252,21 @@ function resetState() {
     state.groups[g] = TEAMS_BY_GROUP[g].map(t => t.name);
   });
 
-  state.groupMatches = {};
-  ensureAllGroupMatches();
-  updateAllGroupOrdersFromMatches();
-
+  state.groupsConfirmed = {};
   state.thirdPlace = [];
+  state.thirdPlaceConfirmed = false;
+  ensureGroupsInitialized();
 
   state.knockoutResults = {};
   state.matchTeams = {};
   state.knockout = {};
 
-  state.awards = {
-    goldenBoot: ['', '', ''],
-    goldenBall: ['', '', '']
-  };
+  state.awards = emptyAwardsState();
 
   fillAwards(state.awards);
   clearLocalPrediction();
+  buildTPAllocation();
+  computeMatchTeams();
   renderAll();
 
   showToast('A tomar por culo.');
@@ -3383,7 +3331,7 @@ async function init() {
   computeMatchTeams();
   renderAll();
 
-  document.querySelectorAll('#awardGb1,#awardGb2,#awardGb3,#awardBa1,#awardBa2,#awardBa3').forEach(el => {
+  document.querySelectorAll(AWARD_SELECT_IDS.map(id => '#' + id).join(',')).forEach(el => {
     el.addEventListener('input', saveLocalPredictionSoon);
     el.addEventListener('change', saveLocalPredictionSoon);
   });
