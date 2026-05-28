@@ -138,6 +138,7 @@ const AWARD_PLAYERS = [
   { name: 'Dean Huijsen', country: 'Spain' },
   { name: 'Álex Baena', country: 'Spain' },
   { name: 'Unai Simón', country: 'Spain' },
+  { name: 'Adrian Zurdito Garcia', country: 'Spain' }, // Broma
 
   // Argentina
   { name: 'Lionel Messi', country: 'Argentina' },
@@ -211,6 +212,7 @@ const AWARD_PLAYERS = [
   { name: 'Ronald Araújo', country: 'Uruguay' },
   { name: 'Manuel Ugarte', country: 'Uruguay' },
   { name: 'José María Giménez', country: 'Uruguay' },
+  { name: 'Beatriz Perez', country: 'Uruguay' }, // Broma
 
   // Croatia
   { name: 'Luka Modrić', country: 'Croatia' },
