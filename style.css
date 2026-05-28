@@ -67,6 +67,42 @@ header .subtitle {
   font-weight: 600;
 }
 
+/* ---- LKS Next badge ---- */
+.lks-badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--white);
+  background: linear-gradient(135deg, #0E1A2B 0%, #1f3a5f 100%);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--dark-text);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 10px;
+  position: relative;
+}
+.lks-badge::before {
+  content: "⚡ ";
+  color: var(--gold);
+}
+
+/* ---- LKS Next footer ---- */
+.lks-footer {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--mid-text);
+  padding: 24px 20px 32px;
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+.lks-footer strong {
+  color: var(--dark-text);
+}
+
 /* ---- Tab Navigation ---- */
 .tab-nav {
   display: flex;

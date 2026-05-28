@@ -667,7 +667,7 @@ async function loadData() {
     return true;
   } catch(e) {
     console.error('Failed to load tournament data:', e);
-    showToast('Failed to load tournament data. Check your connection.', true);
+    showToast('No hay manera de cargar los datos del Mundial. Revisa la conexión (¿otra vez la VPN, en serio?).', true);
     return false;
   }
 }
@@ -1038,7 +1038,7 @@ function showToast(msg, error) {
 
 function showLoading(msg) {
   document.getElementById('loadingOverlay').style.display = 'flex';
-  document.getElementById('loadingText').textContent = msg || 'Loading...';
+  document.getElementById('loadingText').textContent = msg || 'Cargando...';
 }
 function hideLoading() {
   document.getElementById('loadingOverlay').style.display = 'none';
@@ -3203,7 +3203,7 @@ async function confirmSubmitPrediction() {
   const playerName = input.value.trim();
 
   if (!playerName) {
-    showToast('Please enter your name.', true);
+    showToast('Eh, eh, eh… sin nombre no hay quiniela, compi.', true);
     input.focus();
     return;
   }
@@ -3228,10 +3228,10 @@ async function confirmSubmitPrediction() {
 
     hideLoading();
     fireConfetti();
-    showToast('Listo, buena suerte. Puede tardar unos segundos en aparecer en el ranking.');
+    showToast('¡Apuesta registrada! Tarda unos segundos en asomar por el ranking. Mucha suerte, crack de LKS Next.');
   } catch(e) {
     hideLoading();
-    showToast('Error. Inténtalo otra vez o avísame.', true);
+    showToast('Algo ha petado al enviar. Inténtalo otra vez o avisa al de sistemas (a ver si te hace caso).', true);
   }
 }
 
@@ -3274,10 +3274,10 @@ function resetState() {
 
 // ---- Init ----
 async function init() {
-  showLoading('Loading tournament data...');
+  showLoading('Cargando el Mundial...');
   const ok = await loadData();
   hideLoading();
-  if (!ok) { showToast('Failed to load tournament data. Check connection and reload.', true); return; }
+  if (!ok) { showToast('No hay datos del Mundial. Revisa la conexión y recarga (sí, otra vez).', true); return; }
 
   // Clear stale localStorage from old incompatible data
   const v = localStorage.getItem(LOCAL_STORAGE_VERSION_KEY);

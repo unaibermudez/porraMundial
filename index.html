@@ -1,18 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/png" href="./favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mundial FIFA 2026</title>
+  <title>Quiniela LKS Next — Mundial 2026</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
-  <link rel="stylesheet" href="style.css?v=group-order-drag-and-new-awards">
+  <link rel="stylesheet" href="style.css?v=lksnext-personalization">
 </head>
 <body>
 
   <header>
-    <h1>⚽ Ulises, tráyame el MUNDIAL 2026 ⚽</h1>
-    <p class="subtitle">¿Cuál va a ser tu "ojito con..."?</p>
+    <span class="lks-badge" title="Edición LKS Next">LKS Next · edición Mundial</span>
+    <h1>⚽ LKS Next, tráyamelo: ¡el MUNDIAL 2026! ⚽</h1>
+    <p class="subtitle">La quiniela oficial de pasillo, café y Teams paralelo. ¿Cuál va a ser tu "ojito con…"?</p>
   </header>
 
   <nav class="tab-nav">
@@ -26,7 +27,7 @@
 
       <!-- Toolbar -->
       <div class="toolbar-btns">
-        <button class="toolbar-btn" id="btnReset">&#128260; Limpiar todo (no hay vuelta atrás)</button>
+        <button class="toolbar-btn" id="btnReset">&#128260; Limpiar todo (sin llorar luego, eh)</button>
         <button class="toolbar-btn" id="btnScoringHelp">❓ Cómo se puntúa</button>
       </div>
 
@@ -79,7 +80,7 @@
 
       <!-- Submit -->
       <div class="submit-section">
-        <button class="submit-btn" id="btnSubmit">&#9917; Sentar cátedra</button>
+        <button class="submit-btn" id="btnSubmit">&#9917; Sentar cátedra (LKS Next style)</button>
       </div>
 
     </div>
@@ -88,9 +89,9 @@
   <!-- ==================== LEADERBOARD TAB ==================== -->
     <div id="tab-leaderboard" class="tab-content">
     <div class="container">
-      <h2 class="section-title">&#127942; Ranking</h2>
+      <h2 class="section-title">&#127942; Ranking LKS Next</h2>
       <p class="note-text">
-        Haz click en un jugador para confirmar el sesgo que ya tienes de que no tiene razón.
+        Haz click en un compi para confirmar el sesgo que ya tienes de que no tiene ni idea de fútbol.
       </p>
 
       <div id="leaderboardContent">
@@ -120,25 +121,28 @@
 
   <script src="third_place_table.js?v=group-order-drag-and-new-awards"></script>
   <script src="results.js?v=empty-results-reset"></script>
-  <script src="app.js?v=group-order-drag-and-new-awards"></script>
+  <script src="app.js?v=lksnext-personalization"></script>
   <div class="name-modal-overlay" id="nameModal" style="display:none;">
   <div class="name-modal">
     <h3>Así que sentando cátedra, ¿eh?</h3>
-    <p>¿Quién cojones eres?</p>
+    <p>¿Quién cojones eres? (nombre + apellido o el mote de la oficina, lo que prefieras)</p>
 
     <input
       type="text"
       id="playerNameInput"
       class="name-modal-input"
-      placeholder="Your name"
+      placeholder="Ej. Maite (la del café cargado)"
       maxlength="40"
     >
 
     <div class="name-modal-actions">
-      <button type="button" class="toolbar-btn" id="cancelNameSubmit">Paso</button>
-      <button type="button" class="submit-btn" id="confirmNameSubmit">Apostar</button>
+      <button type="button" class="toolbar-btn" id="cancelNameSubmit">Paso, mejor sigo currando</button>
+      <button type="button" class="submit-btn" id="confirmNameSubmit">Apostar fuerte</button>
     </div>
   </div>
 </div>
+<footer class="lks-footer">
+  Hecho con cariño (y demasiado café) para la peña de <strong>LKS Next</strong>. Que gane el mejor… o el que más suerte tenga, vaya.
+</footer>
 </body>
 </html>
