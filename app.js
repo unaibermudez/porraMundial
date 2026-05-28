@@ -3540,7 +3540,7 @@ function openScoringHelpModal() {
         <div class="scoring-example-badge got-points">+3</div>
         <div class="scoring-example-text">
           Cada cuadradito verde del leaderboard representa los puntos que te ha dado esa decisión concreta:
-          acertar un resultado exacto, que una selección llegue a 16avos, semis, final, etc.
+          acertar el orden de un grupo, que una selección llegue a 16avos, semis, final, etc.
         </div>
       </div>
 
