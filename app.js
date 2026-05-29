@@ -11,15 +11,16 @@ const ENTRY_ID = 'entry.479239932';
 const puntuaciones = {
   grupos: {
     posicion: {
-      primero: 4,
-      segundo: 3,
-      tercero: 2
+      primero: 5,
+      segundo: 5,
+      tercero: 5,
+      cuarto: 5
     },
-    mejorTercero: 1
+    mejorTercero: 5
   },
   eliminatorias: {
-    round32: 2,
-    round16: 3,
+    round32: 0,
+    round16: 5,
     quarterfinals: 5,
     semifinals: 10,
     finalist: 20,
@@ -3390,6 +3391,7 @@ function scorePrediction(prediction, results = RESULTS) {
     if (predictionResultStatus(predGroup[0], realGroup[0]) === 'correct') score += puntuaciones.grupos.posicion.primero;
     if (predictionResultStatus(predGroup[1], realGroup[1]) === 'correct') score += puntuaciones.grupos.posicion.segundo;
     if (predictionResultStatus(predGroup[2], realGroup[2]) === 'correct') score += puntuaciones.grupos.posicion.tercero;
+    if (predictionResultStatus(predGroup[3], realGroup[3]) === 'correct') score += puntuaciones.grupos.posicion.cuarto;
   });
 
   // Mejores terceros: 1 punto por cada equipo que el usuario haya clasificado
@@ -3541,10 +3543,8 @@ function openScoringHelpModal() {
         <div class="scoring-help-card">
           <h4>🌍 Fase de grupos</h4>
           <ul>
-            <li>Acertar 1º exacto de grupo: <strong>${puntuaciones.grupos.posicion.primero} pts</strong></li>
-            <li>Acertar 2º exacto de grupo: <strong>${puntuaciones.grupos.posicion.segundo} pts</strong></li>
-            <li>Acertar 3º exacto de grupo: <strong>${puntuaciones.grupos.posicion.tercero} pts</strong></li>
-            <li>Cada mejor tercero (top 8) acertado: <strong>${puntuaciones.grupos.mejorTercero} pt</strong></li>
+            <li>Acertar cada posición exacta de grupo (1º, 2º, 3º o 4º): <strong>${puntuaciones.grupos.posicion.primero} pts</strong></li>
+            <li>Cada mejor tercero (top 8) acertado: <strong>${puntuaciones.grupos.mejorTercero} pts</strong></li>
           </ul>
           <p class="scoring-help-small">Solo se acierta arrastrando los equipos en el orden correcto. No hay marcadores exactos.</p>
         </div>
@@ -3552,7 +3552,7 @@ function openScoringHelpModal() {
         <div class="scoring-help-card">
           <h4>🥊 Eliminatorias</h4>
           <ul>
-            <li>Equipo en dieciseisavos: <strong>${puntuaciones.eliminatorias.round32} pts</strong></li>
+            <li>Equipo en dieciseisavos: <strong>no puntúa</strong></li>
             <li>Equipo en octavos: <strong>${puntuaciones.eliminatorias.round16} pts</strong></li>
             <li>Equipo en cuartos: <strong>${puntuaciones.eliminatorias.quarterfinals} pts</strong></li>
             <li>Equipo en semifinales: <strong>${puntuaciones.eliminatorias.semifinals} pts</strong></li>
@@ -3639,6 +3639,7 @@ function getPredictedGroupPositionPoints(team, idx, realOrder) {
   if (idx === 0) return puntuaciones.grupos.posicion.primero;
   if (idx === 1) return puntuaciones.grupos.posicion.segundo;
   if (idx === 2) return puntuaciones.grupos.posicion.tercero;
+  if (idx === 3) return puntuaciones.grupos.posicion.cuarto;
   return 0;
 }
 
