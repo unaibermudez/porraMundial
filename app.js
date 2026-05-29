@@ -2679,7 +2679,7 @@ function renderBracket() {
 
   d.querySelector('.slot-clear').addEventListener('click', e => {
     e.stopPropagation();
-    clearKnockoutAndRender(team);
+    clearKnockoutAndRender(matchNum);
   });
 
   return d;
@@ -2832,12 +2832,34 @@ function pickWinner(matchNum, slotNum) {
   saveLocalPredictionSoon();
 }
 
-function clearKnockoutAndRender(team) {
-  if (!team) return;
-  Object.keys(state.knockoutResults).forEach(k => {
-    if (state.knockoutResults[k] === team) delete state.knockoutResults[k];
-  });
-  computeMatchTeams();
+function clearKnockoutAndRender(matchNum) {
+  if (matchNum == null) return;
+  if (!(matchNum in state.knockoutResults)) {
+    // Nothing picked for this match, nothing to clear here. Still re-render in case.
+    renderAll();
+    return;
+  }
+  delete state.knockoutResults[matchNum];
+
+  // Cascade forward: any later match whose stored winner is no longer present in
+  // its (recomputed) team1/team2 must also be cleared. Repeat until stable so
+  // QF/SF/Final picks that depended on the removed result also disappear.
+  let changed = true;
+  let guard = 0;
+  while (changed && guard < 20) {
+    changed = false;
+    guard += 1;
+    computeMatchTeams();
+    Object.keys(state.knockoutResults).forEach(num => {
+      const teams = state.matchTeams[num] || {};
+      const w = state.knockoutResults[num];
+      if (w && w !== teams.team1 && w !== teams.team2) {
+        delete state.knockoutResults[num];
+        changed = true;
+      }
+    });
+  }
+
   renderAll();
   saveLocalPredictionSoon();
 }
