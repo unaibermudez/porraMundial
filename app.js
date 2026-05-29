@@ -2954,13 +2954,30 @@ function renderBracket() {
     const banner = document.createElement('div');
     banner.id = 'championBanner';
     banner.className = 'champion-banner';
-    banner.innerHTML =
-      '<div class="champion-banner-inner">' +
-        '<div class="champion-trophy">🏆</div>' +
-        '<span class="champion-flag ' + getFlagClass(finalWinner) + '"></span>' +
-        '<div class="champion-name">' + finalWinner + '</div>' +
-        '<div class="champion-label">¡Tu campeón del Mundial!</div>' +
-      '</div>';
+
+    const inner = document.createElement('div');
+    inner.className = 'champion-banner-inner';
+
+    const trophy = document.createElement('div');
+    trophy.className = 'champion-trophy';
+    trophy.textContent = '🏆';
+
+    const flag = document.createElement('span');
+    flag.className = 'champion-flag ' + getFlagClass(finalWinner);
+
+    const name = document.createElement('div');
+    name.className = 'champion-name';
+    name.textContent = finalWinner;
+
+    const label = document.createElement('div');
+    label.className = 'champion-label';
+    label.textContent = '¡Tu campeón del Mundial!';
+
+    inner.appendChild(trophy);
+    inner.appendChild(flag);
+    inner.appendChild(name);
+    inner.appendChild(label);
+    banner.appendChild(inner);
     container.appendChild(banner);
   }
 }
