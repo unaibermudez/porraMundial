@@ -1416,6 +1416,22 @@ const AWARD_PLAYERS = [
 
 ];
 
+// Los tres primeros jugadores de cada país en AWARD_PLAYERS son, por convención,
+// los porteros de esa selección. Esto permite filtrar el premio "Guante de Oro"
+// para que únicamente puedan elegirse porteros.
+const AWARD_GOALKEEPERS = (() => {
+  const perCountry = new Map();
+  return AWARD_PLAYERS.filter(p => {
+    const seen = perCountry.get(p.country) || 0;
+    perCountry.set(p.country, seen + 1);
+    return seen < 3;
+  });
+})();
+
+function getAwardPlayersFor(cfg) {
+  return cfg && cfg.key === 'goldenGlove' ? AWARD_GOALKEEPERS : AWARD_PLAYERS;
+}
+
 function getFlagClass(team) {
   if (!team) return '';
   const code = FLAG_CODE[team];
@@ -2976,7 +2992,7 @@ function openAwardPickerModal(select) {
   list.appendChild(empty);
 
   if (cfg.kind === 'player') {
-    AWARD_PLAYERS.forEach(player => {
+    getAwardPlayersFor(cfg).forEach(player => {
       const option = document.createElement('button');
       option.type = 'button';
       option.className = 'award-picker-option' + (currentValue === player.name ? ' selected' : '');
@@ -3068,7 +3084,7 @@ function renderAwardSelects() {
     select.innerHTML = '<option value="">---</option>';
 
     if (cfg.kind === 'player') {
-      AWARD_PLAYERS.forEach(player => {
+      getAwardPlayersFor(cfg).forEach(player => {
         const option = document.createElement('option');
         option.value = player.name;
         option.textContent = `${player.name} — ${player.country}`;
