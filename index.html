@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quiniela LKS Next — Mundial 2026</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
-  <link rel="stylesheet" href="style.css?v=quiniela-1x2">
+  <link rel="stylesheet" href="style.css?v=team-filter-review-fixes">
 </head>
 <body>
 
@@ -126,7 +126,7 @@
 
   <script src="third_place_table.js?v=group-order-drag-and-new-awards"></script>
   <script src="results.js?v=quiniela-1x2"></script>
-  <script src="app.js?v=teams-in-spanish"></script>
+  <script src="app.js?v=team-filter-review-fixes"></script>
   <div class="name-modal-overlay" id="nameModal" style="display:none;">
   <div class="name-modal">
     <h3>Así que sentando cátedra, ¿eh?</h3>
@@ -139,6 +139,11 @@
       placeholder="Ej. Mikel Garcia Bartolome"
       maxlength="40"
     >
+
+    <p>¿Y de qué equipo eres?</p>
+    <select id="teamSelect" class="name-modal-select" required aria-required="true">
+      <option value="">— Elige tu equipo —</option>
+    </select>
 
     <div class="name-modal-actions">
       <button type="button" class="toolbar-btn" id="cancelNameSubmit">Paso, debería estar currando</button>

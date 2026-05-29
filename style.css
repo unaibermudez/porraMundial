@@ -773,8 +773,16 @@ header .subtitle {
 .leaderboard-name {
   color: var(--dark-text);
   overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.leaderboard-name > span:first-child {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .leaderboard-score {
@@ -784,6 +792,46 @@ header .subtitle {
   padding: 6px 10px;
   border-radius: 999px;
   font-size: 0.9rem;
+}
+
+.leaderboard-team {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--grass-green);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.team-filter-btn {
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border: var(--border-medium);
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--mid-text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.team-filter-btn:hover {
+  border-color: var(--grass-green);
+  color: var(--grass-green);
+}
+
+.team-filter-btn.active {
+  background: var(--grass-green);
+  border-color: var(--grass-green);
+  color: #fff;
 }
 
 .prediction-modal-overlay {
@@ -1041,6 +1089,30 @@ header .subtitle {
   outline: none;
   border-color: var(--grass-green);
   box-shadow: 0 0 0 3px rgba(76,175,80,0.18);
+}
+
+.name-modal-select {
+  width: 100%;
+  padding: 12px 14px;
+  border: var(--border-medium);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  background: var(--card-bg);
+  color: var(--dark-text);
+  cursor: pointer;
+}
+
+.name-modal-select:focus {
+  outline: none;
+  border-color: var(--grass-green);
+  box-shadow: 0 0 0 3px rgba(76,175,80,0.18);
+}
+
+.name-modal p {
+  color: var(--mid-text);
+  margin-bottom: 8px;
 }
 
 .name-modal-actions {

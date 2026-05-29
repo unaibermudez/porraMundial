@@ -3668,31 +3668,114 @@ function parseCSV(csv) {
   return rows;
 }
 
+const LKS_TEAMS = [
+  'Consultoría Tecnológica',
+  'Consultoría de Negocio',
+  'Legal',
+  'Servicios Generales'
+];
+
+const TEAM_EMOJIS = {
+  'Consultoría Tecnológica': '💻',
+  'Consultoría de Negocio': '📊',
+  Legal: '⚖️',
+  'Servicios Generales': '🏢'
+};
+
+function populateTeamSelectOptions() {
+  const teamSelect = document.getElementById('teamSelect');
+  if (!teamSelect) return;
+
+  const defaultLabel = teamSelect.querySelector('option[value=""]')?.textContent || '— Elige tu equipo —';
+  teamSelect.innerHTML = `<option value="">${defaultLabel}</option>`;
+
+  LKS_TEAMS.forEach(team => {
+    const option = document.createElement('option');
+    option.value = team;
+    option.textContent = `${TEAM_EMOJIS[team] || ''} ${team}`.trim();
+    teamSelect.appendChild(option);
+  });
+}
+
 function renderLeaderboardList(submissions) {
   const container = document.getElementById('leaderboardContent');
 
-  container.innerHTML = `
-    <div class="leaderboard-list"></div>
-  `;
+  // Build filter bar
+  const filterBar = document.createElement('div');
+  filterBar.className = 'team-filter-bar';
 
-  const list = container.querySelector('.leaderboard-list');
+  const allBtn = document.createElement('button');
+  allBtn.type = 'button';
+  allBtn.className = 'team-filter-btn active';
+  allBtn.dataset.team = '';
+  allBtn.textContent = '🌍 Todos';
+  filterBar.appendChild(allBtn);
 
-  submissions.forEach((entry, index) => {
+  LKS_TEAMS.forEach(team => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'leaderboard-entry';
+    btn.className = 'team-filter-btn';
+    btn.dataset.team = team;
+    btn.textContent = team;
+    filterBar.appendChild(btn);
+  });
 
-    btn.innerHTML = `
-      <span class="leaderboard-rank">#${index + 1}</span>
-      <span class="leaderboard-name">${entry.name}</span>
-      <span class="leaderboard-score">${entry.score} pts</span>
-    `;
+  const list = document.createElement('div');
+  list.className = 'leaderboard-list';
 
-    btn.addEventListener('click', () => {
-      openPredictionModal(entry);
+  container.innerHTML = '';
+  container.appendChild(filterBar);
+  container.appendChild(list);
+
+  let activeTeam = '';
+
+  function buildEntries(filter) {
+    list.innerHTML = '';
+    const filtered = filter ? submissions.filter(e => e.prediction.team === filter) : submissions;
+
+    if (filtered.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'note-text';
+      empty.style.marginTop = '20px';
+      empty.textContent = 'Nadie de este equipo ha apostado todavía. Vergüenza ajena.';
+      list.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach((entry, index) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'leaderboard-entry';
+
+      const playerName = escapeHtml(entry.name);
+      const teamName = escapeHtml(entry.prediction.team);
+      const teamLabel = entry.prediction.team
+        ? `<span class="leaderboard-team">${teamName}</span>`
+        : '';
+
+      btn.innerHTML = `
+        <span class="leaderboard-rank">#${index + 1}</span>
+        <span class="leaderboard-name"><span>${playerName}</span>${teamLabel}</span>
+        <span class="leaderboard-score">${entry.score} pts</span>
+      `;
+
+      btn.addEventListener('click', () => {
+        openPredictionModal(entry);
+      });
+
+      list.appendChild(btn);
     });
+  }
 
-    list.appendChild(btn);
+  buildEntries('');
+
+  filterBar.addEventListener('click', e => {
+    const btn = e.target.closest('.team-filter-btn');
+    if (!btn) return;
+    filterBar.querySelectorAll('.team-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTeam = btn.dataset.team;
+    buildEntries(activeTeam);
   });
 }
 
@@ -4627,9 +4710,11 @@ function submitPrediction() {
 function openNameModal() {
   const modal = document.getElementById('nameModal');
   const input = document.getElementById('playerNameInput');
+  const teamSelect = document.getElementById('teamSelect');
 
   modal.style.display = 'flex';
   input.value = '';
+  if (teamSelect) teamSelect.value = '';
   setTimeout(() => input.focus(), 50);
 }
 
@@ -4647,8 +4732,24 @@ async function confirmSubmitPrediction() {
     return;
   }
 
+  const teamSelect = document.getElementById('teamSelect');
+  const playerTeam = teamSelect ? teamSelect.value : '';
+
+  if (!playerTeam) {
+    showToast('Elige tu equipo antes de apostar, crack.', true);
+    if (teamSelect) teamSelect.focus();
+    return;
+  }
+
+  if (!LKS_TEAMS.includes(playerTeam)) {
+    showToast('Ese equipo no es válido. Elige uno de la lista.', true);
+    if (teamSelect) teamSelect.focus();
+    return;
+  }
+
   const payload = buildPayload();
   payload.name = playerName;
+  payload.team = playerTeam;
   payload._submittedAt = new Date().toISOString();
 
   const params = new URLSearchParams();
@@ -4719,6 +4820,8 @@ async function init() {
   const ok = await loadData();
   hideLoading();
   if (!ok) { showToast('No hay datos del Mundial. Revisa la conexión y recarga (sí, otra vez).', true); return; }
+
+  populateTeamSelectOptions();
 
   // Clear stale localStorage from old incompatible data
   const v = localStorage.getItem(LOCAL_STORAGE_VERSION_KEY);
