@@ -57,9 +57,9 @@ const AWARD_SELECT_IDS = AWARDS_CONFIG.map(a => a.selectId);
 // que realmente son partidos de la fase de grupos.
 // Formato 1X2: 1 = gana team1, X = empate, 2 = gana team2.
 const QUINIELA_1X2_MATCHES = [
-  { group: 'A', team1: 'Mexico',   team2: 'South Korea' },
-  { group: 'C', team1: 'Scotland', team2: 'Morocco'     },
-  { group: 'H', team1: 'Uruguay',  team2: 'Spain'       }
+  { group: 'A', team1: 'México',   team2: 'Corea del Sur' },
+  { group: 'C', team1: 'Escocia', team2: 'Marruecos'     },
+  { group: 'H', team1: 'Uruguay',  team2: 'España'       }
 ].map(m => Object.assign(m, { key: [m.team1, m.team2].sort().join('__') }));
 
 function emptyAwardsState() {
