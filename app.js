@@ -2860,7 +2860,6 @@ function clearKnockoutAndRender(matchNum) {
     });
   }
 
-  computeMatchTeams();
   renderAll();
   saveLocalPredictionSoon();
 }
