@@ -60,17 +60,7 @@ const QUINIELA_1X2_MATCHES = [
   { group: 'A', team1: 'Mexico',   team2: 'South Korea' },
   { group: 'C', team1: 'Scotland', team2: 'Morocco'     },
   { group: 'H', team1: 'Uruguay',  team2: 'Spain'       }
-].map(m => {
-  const legacyKey = [m.team1, m.team2].sort().join('__');
-  const team1 = translateTeamName(m.team1);
-  const team2 = translateTeamName(m.team2);
-  return Object.assign(m, {
-    team1,
-    team2,
-    key: [team1, team2].sort().join('__'),
-    legacyKey
-  });
-});
+].map(m => Object.assign(m, { key: [m.team1, m.team2].sort().join('__') }));
 
 function emptyAwardsState() {
   const empty = {};
