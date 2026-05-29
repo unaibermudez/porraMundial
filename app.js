@@ -4376,10 +4376,6 @@ function renderReviewKnockout(prediction) {
         <h4 class="group-modal-section-title"><span>🏆</span> ELIMINATORIAS: APOSTADO VS REAL</h4>
         <p class="note-text review-knockout-note">Haz click en un partido para comparar el cruce esperado con el cruce real, cuando ese partido real ya exista.</p>
       </div>
-      <div class="review-knockout-legend" aria-label="Leyenda del bracket">
-        <span><i class="legend-box legend-pred"></i> Tu predicción</span>
-        <span><i class="legend-dot-info">i</i> Click = comparar partido</span>
-      </div>
     </div>
   `;
 
