@@ -4766,7 +4766,7 @@ function openNameModal() {
   input.value = '';
   if (teamSelect) teamSelect.value = '';
   if (confirmBtn) {
-    confirmBtn.textContent = 'Apostar fuerte (No hay vuelta atras)';
+    confirmBtn.textContent = 'Apostar fuerte (No hay vuelta atrás)';
     confirmBtn.dataset.isUpdate = '';
   }
   setTimeout(() => input.focus(), 50);
@@ -4792,7 +4792,7 @@ function updateNameModalHint() {
     confirmBtn.textContent = '🔄 Actualizar porra';
     confirmBtn.dataset.isUpdate = '1';
   } else {
-    confirmBtn.textContent = 'Apostar fuerte (No hay vuelta atras)';
+    confirmBtn.textContent = 'Apostar fuerte (No hay vuelta atrás)';
     confirmBtn.dataset.isUpdate = '';
   }
 }
