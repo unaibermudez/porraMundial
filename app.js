@@ -3644,6 +3644,8 @@ function scorePrediction(prediction, results = RESULTS) {
 const knownSubmissionNames = new Set();
 
 async function loadLeaderboard() {
+  knownSubmissionNames.clear();
+
   const res = await fetch(LEADERBOARD_CSV_URL);
   const csv = await res.text();
 
@@ -3678,7 +3680,6 @@ async function loadLeaderboard() {
   });
 
   // Refresh the names cache so the submit modal can warn about updates.
-  knownSubmissionNames.clear();
   submissionsByName.forEach((_, key) => knownSubmissionNames.add(key));
 
   const submissions = [...submissionsByName.values(), ...anonymousSubmissions];
@@ -4854,11 +4855,12 @@ async function confirmSubmitPrediction() {
     });
 
     hideLoading();
+    knownSubmissionNames.add(playerName.toLowerCase());
     fireConfetti();
     if (isUpdate) {
       showToast('¡Porra actualizada! En unos segundos se refleja en el ranking. ¡Que ruede el balón!');
     } else {
-      showToast('¡Apuesta registrada! Tarda unos segundos en asomar por el ranking. Mucha suerte, espero que no ganes tu.');
+      showToast('¡Apuesta registrada! Tarda unos segundos en asomar por el ranking. Mucha suerte, espero que no ganes tú.');
     }
   } catch(e) {
     hideLoading();
