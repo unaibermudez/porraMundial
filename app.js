@@ -1699,6 +1699,7 @@ function saveLocalPredictionNow() {
   } catch (e) {
     console.warn('Could not save local prediction draft:', e);
   }
+  updateSubmitButton();
 }
 
 function saveLocalPredictionSoon() {
@@ -4761,7 +4762,81 @@ function parseCSV(text) {
 // ---- Submit ----
 const FORM_ACTION = 'https://docs.google.com/forms/d/e/'+FORM_ID+'/formResponse';
 
+function getFormCompleteness() {
+  const missing = [];
+
+  // 1. All groups confirmed
+  const unconfirmed = GROUP_NAMES.filter(g => !state.groupsConfirmed?.[g]);
+  if (unconfirmed.length > 0) {
+    missing.push(`Fase de grupos: confirma el orden de ${unconfirmed.map(g => `Grupo ${g}`).join(', ')}`);
+  }
+
+  // 2. Quiniela 1X2 — all matches picked
+  const unpicked = QUINIELA_1X2_MATCHES.filter(m => !state.quiniela1x2?.[m.key]);
+  if (unpicked.length > 0) {
+    missing.push('Quiniela 1X2: ' + unpicked.map(m => m.team1 + ' vs ' + m.team2).join(', '));
+  }
+
+  // 3. Best thirds confirmed
+  if (!state.thirdPlaceConfirmed) {
+    missing.push('Mejores terceros: confirma el ranking de los 12 terceros');
+  }
+
+  // 4. Full knockout bracket resolved
+  if (KO_TREE) {
+    const allNums = [
+      ...KO_TREE.round32.map(m => m.num),
+      ...(KO_TREE.round16 || []).map(m => m.num),
+      ...(KO_TREE.quarterfinals || []).map(m => m.num),
+      ...(KO_TREE.semifinals || []).map(m => m.num),
+      ...(KO_TREE.final || []).map(m => m.num),
+      ...(KO_TREE.thirdPlace || []).map(m => m.num),
+    ];
+    const pending = allNums.filter(n => !state.knockoutResults[n]).length;
+    if (pending > 0) {
+      missing.push(`Fase eliminatoria: faltan ${pending} partido${pending > 1 ? 's' : ''} por decidir`);
+    }
+  }
+
+  // 5. All awards filled
+  const emptyAwards = AWARDS_CONFIG.filter(a => !state.awards?.[a.key]);
+  if (emptyAwards.length > 0) {
+    missing.push('Premios del Mundial: ' + emptyAwards.map(a => a.label).join(', '));
+  }
+
+  return { complete: missing.length === 0, missing };
+}
+
+function updateSubmitButton() {
+  const btn = document.getElementById('btnSubmit');
+  if (!btn || !LOADED) return;
+
+  const { complete, missing } = getFormCompleteness();
+  btn.disabled = !complete;
+
+  let hint = document.getElementById('submitHint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.id = 'submitHint';
+    hint.className = 'submit-hint';
+    btn.parentNode.insertBefore(hint, btn.nextSibling);
+  }
+
+  if (!complete) {
+    hint.innerHTML = '<strong>⚠️ Rellena estos campos antes de enviar:</strong><ul>' +
+      missing.map(m => '<li>' + escapeHtml(m) + '</li>').join('') + '</ul>';
+    hint.style.display = '';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
 function submitPrediction() {
+  const { complete, missing } = getFormCompleteness();
+  if (!complete) {
+    showToast('⚠️ Faltan campos por rellenar: ' + missing.join(' · '), true);
+    return;
+  }
   openNameModal();
 }
 
@@ -4879,6 +4954,7 @@ function renderAll() {
   renderBracket();
   renderAwardSelects();
   loadLeaderboard();
+  updateSubmitButton();
 }
 
 function resetState() {
