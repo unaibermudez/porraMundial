@@ -3648,9 +3648,11 @@ async function loadLeaderboard() {
   const csv = await res.text();
 
   const rows = parseCSV(csv);
-  // Use a Map keyed by lowercase name so that later rows (= more recent
-  // submissions) silently overwrite earlier ones for the same person.
+  // Use a Map keyed by normalized lowercase name so that later rows
+  // (= more recent submissions) silently overwrite earlier ones for the same
+  // person, while anonymous rows remain as separate entries.
   const submissionsByName = new Map();
+  const anonymousSubmissions = [];
 
   rows.slice(1).forEach(row => {
     const rawJson = row[1];
@@ -3658,12 +3660,18 @@ async function loadLeaderboard() {
 
     try {
       const prediction = JSON.parse(rawJson);
-      const name = prediction.name || 'Anonymous';
-      submissionsByName.set(name.toLowerCase(), {
-        name,
+      const trimmedName = typeof prediction.name === 'string' ? prediction.name.trim() : '';
+      const submission = {
+        name: trimmedName || 'Anonymous',
         score: scorePrediction(prediction),
         prediction
-      });
+      };
+
+      if (trimmedName) {
+        submissionsByName.set(trimmedName.toLowerCase(), submission);
+      } else {
+        anonymousSubmissions.push(submission);
+      }
     } catch (e) {
       console.warn('Invalid prediction JSON:', rawJson);
     }
@@ -3673,7 +3681,7 @@ async function loadLeaderboard() {
   knownSubmissionNames.clear();
   submissionsByName.forEach((_, key) => knownSubmissionNames.add(key));
 
-  const submissions = Array.from(submissionsByName.values());
+  const submissions = [...submissionsByName.values(), ...anonymousSubmissions];
   submissions.sort((a, b) => b.score - a.score);
   renderLeaderboardList(submissions);
 }
