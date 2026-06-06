@@ -4798,8 +4798,9 @@ function getFormCompleteness() {
     }
   }
 
-  // 5. All awards filled
-  const emptyAwards = AWARDS_CONFIG.filter(a => !state.awards?.[a.key]);
+  // 5. All awards filled (read from DOM, as state.awards is only synced from localStorage on load)
+  const currentAwards = readAwards();
+  const emptyAwards = AWARDS_CONFIG.filter(a => !currentAwards[a.key]);
   if (emptyAwards.length > 0) {
     missing.push('Premios del Mundial: ' + emptyAwards.map(a => a.label).join(', '));
   }
