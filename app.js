@@ -1491,8 +1491,7 @@ const AWARD_PLAYERS = [
   { name: 'Azmahar Ariano', country: 'Panamá' },
 
   // 🐣 Easter Egg — Euskadi (País Vasco)
-  { name: 'Aritz Tokero Galdos', country: 'Euskadi (País Vasco)' },
-  { name: 'Jon Escalador Dorronsoro', country: 'Euskadi (País Vasco)' }
+  { name: 'Asier Benítez Zamora', country: 'Euskadi (País Vasco)' }
 
 ];
 
@@ -4758,7 +4757,7 @@ function updateSubmitButton() {
     hint.setAttribute('role', 'status');
     hint.setAttribute('aria-live', 'polite');
     hint.setAttribute('aria-atomic', 'true');
-    btn.parentNode.insertBefore(hint, btn.nextSibling);
+    btn.parentNode.insertBefore(hint, btn);
   }
 
   if (!complete) {
