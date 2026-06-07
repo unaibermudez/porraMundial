@@ -4,9 +4,9 @@
    ============================================================ */
 
 const DATA_SRC = 'https://raw.githubusercontent.com/openfootball/worldcup.json/refs/heads/master/2026';
-const LEADERBOARD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSDwcurPFZ1PgxTQ_o_D4D4Xjboy1lUrU711uWdLIKXVnWofbf_CwGEeaTL0VaLAX7SOHlRYBCuybu_/pub?gid=1132102352&single=true&output=csv'
-const FORM_ID = '1FAIpQLSd9OPSO4JwC6aDS0dtN9FkpmIiCCijgQztklxLC410HTgvjUg';
-const ENTRY_ID = 'entry.479239932';
+const LEADERBOARD_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRY447UHXmt4UjsO39pm5b3WDURFaRxC10yVwXkOf46dt69dAAFJjU9bLYnsOF2jr-FngPt0Nl-YBUL/pub?gid=812971844&single=true&output=csv'
+const FORM_ID = '1FAIpQLSd9BYAM-ezBg0HrvYOOS8jh2qXdBQhYoCy3oc9pWS96Qh8xOA';
+const ENTRY_ID = 'entry.1051783234';
 
 const puntuaciones = {
   grupos: {
@@ -3728,113 +3728,48 @@ function parseCSV(csv) {
 }
 
 const LKS_TEAMS = [
-  'Consultoría Tecnológica',
-  'Consultoría de Negocio',
-  'Legal',
-  'Servicios Generales'
+  'Festako Erregeak'
 ];
 
 const TEAM_EMOJIS = {
-  'Consultoría Tecnológica': '💻',
-  'Consultoría de Negocio': '📊',
-  Legal: '⚖️',
-  'Servicios Generales': '🏢'
+  'Festako Erregeak': '⚽'
 };
-
-function populateTeamSelectOptions() {
-  const teamSelect = document.getElementById('teamSelect');
-  if (!teamSelect) return;
-
-  const defaultLabel = teamSelect.querySelector('option[value=""]')?.textContent || '— Elige tu equipo —';
-  teamSelect.innerHTML = `<option value="">${defaultLabel}</option>`;
-
-  LKS_TEAMS.forEach(team => {
-    const option = document.createElement('option');
-    option.value = team;
-    option.textContent = `${TEAM_EMOJIS[team] || ''} ${team}`.trim();
-    teamSelect.appendChild(option);
-  });
-}
 
 function renderLeaderboardList(submissions) {
   const container = document.getElementById('leaderboardContent');
-
-  // Build filter bar
-  const filterBar = document.createElement('div');
-  filterBar.className = 'team-filter-bar';
-
-  const allBtn = document.createElement('button');
-  allBtn.type = 'button';
-  allBtn.className = 'team-filter-btn active';
-  allBtn.dataset.team = '';
-  allBtn.textContent = '🌍 Todos';
-  filterBar.appendChild(allBtn);
-
-  LKS_TEAMS.forEach(team => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'team-filter-btn';
-    btn.dataset.team = team;
-    btn.textContent = team;
-    filterBar.appendChild(btn);
-  });
-
   const list = document.createElement('div');
   list.className = 'leaderboard-list';
 
   container.innerHTML = '';
-  container.appendChild(filterBar);
   container.appendChild(list);
 
-  let activeTeam = '';
-
-  function buildEntries(filter) {
-    list.innerHTML = '';
-    const filtered = filter ? submissions.filter(e => e.prediction.team === filter) : submissions;
-
-    if (filtered.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'note-text';
-      empty.style.marginTop = '20px';
-      empty.textContent = 'Nadie de este equipo ha apostado todavía. Vergüenza ajena.';
-      list.appendChild(empty);
-      return;
-    }
-
-    filtered.forEach((entry, index) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'leaderboard-entry';
-
-      const playerName = escapeHtml(entry.name);
-      const teamName = escapeHtml(entry.prediction.team);
-      const teamLabel = entry.prediction.team
-        ? `<span class="leaderboard-team">${teamName}</span>`
-        : '';
-
-      btn.innerHTML = `
-        <span class="leaderboard-rank">#${index + 1}</span>
-        <span class="leaderboard-name"><span>${playerName}</span>${teamLabel}</span>
-        <span class="leaderboard-score">${entry.score} pts</span>
-      `;
-
-      btn.addEventListener('click', () => {
-        openPredictionModal(entry);
-      });
-
-      list.appendChild(btn);
-    });
+  if (submissions.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'note-text';
+    empty.style.marginTop = '20px';
+    empty.textContent = 'Nadie ha apostado todavía. Vergüenza ajena.';
+    list.appendChild(empty);
+    return;
   }
 
-  buildEntries('');
+  submissions.forEach((entry, index) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'leaderboard-entry';
 
-  filterBar.addEventListener('click', e => {
-    const btn = e.target.closest('.team-filter-btn');
-    if (!btn) return;
-    filterBar.querySelectorAll('.team-filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeTeam = btn.dataset.team;
-    buildEntries(activeTeam);
+    const playerName = escapeHtml(entry.name);
+
+    btn.innerHTML = `
+      <span class="leaderboard-rank">#${index + 1}</span>
+      <span class="leaderboard-name"><span>${playerName}</span></span>
+      <span class="leaderboard-score">${entry.score} pts</span>
+    `;
+
+    btn.addEventListener('click', () => {
+      openPredictionModal(entry);
+    });
+
+    list.appendChild(btn);
   });
 }
 
@@ -4855,7 +4790,6 @@ function openNameModal() {
 
   modal.style.display = 'flex';
   input.value = '';
-  if (teamSelect) teamSelect.value = '';
   if (hintEl) hintEl.style.display = 'none';
   if (confirmBtn) {
     confirmBtn.textContent = 'Apostar fuerte (No hay vuelta atrás)';
@@ -4899,26 +4833,11 @@ async function confirmSubmitPrediction() {
     return;
   }
 
-  const teamSelect = document.getElementById('teamSelect');
-  const playerTeam = teamSelect ? teamSelect.value : '';
-
-  if (!playerTeam) {
-    showToast('Elige tu equipo antes de apostar, crack.', true);
-    if (teamSelect) teamSelect.focus();
-    return;
-  }
-
-  if (!LKS_TEAMS.includes(playerTeam)) {
-    showToast('Ese equipo no es válido. Elige uno de la lista.', true);
-    if (teamSelect) teamSelect.focus();
-    return;
-  }
-
   const isUpdate = knownSubmissionNames.has(playerName.toLowerCase());
 
   const payload = buildPayload();
   payload.name = playerName;
-  payload.team = playerTeam;
+  payload.team = LKS_TEAMS[0];
   payload._submittedAt = new Date().toISOString();
 
   const params = new URLSearchParams();
@@ -4995,8 +4914,6 @@ async function init() {
   const ok = await loadData();
   hideLoading();
   if (!ok) { showToast('No hay datos del Mundial. Revisa la conexión y recarga (sí, otra vez).', true); return; }
-
-  populateTeamSelectOptions();
 
   // Clear stale localStorage from old incompatible data
   const v = localStorage.getItem(LOCAL_STORAGE_VERSION_KEY);

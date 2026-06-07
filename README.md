@@ -1,6 +1,6 @@
-# ⚽ Quiniela LKS Next — Mundial 2026
+# ⚽ Quiniela Festako Erregeak — Mundial 2026
 
-La quiniela oficial de pasillo, café y Teams paralelo para la peña de LKS Next.
+La quiniela oficial de la kuadrilla Festako Erregeak para el Mundial 2026.
 
 ---
 
@@ -152,4 +152,4 @@ por los valores correspondientes a tu formulario y hoja de cálculo.
 
 ---
 
-Hecho con cariño (y demasiado café) para LKS Next. Que gane el mejor… o el que más suerte tenga.
+Hecho con cariño (y demasiado café) para la kuadrilla Festako Erregeak. Que gane el mejor… o el que más suerte tenga.

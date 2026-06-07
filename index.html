@@ -4,22 +4,22 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/png" href="./favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiniela LKS Next — Mundial 2026</title>
+  <title>Quiniela Festako Erregeak — Mundial 2026</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
   <link rel="stylesheet" href="style.css?v=disable-submit-until-complete">
 </head>
 <body>
 
   <header>
-    <span class="lks-badge" title="Edición LKS Next">LKS Next · edición Mundial</span>
-    <h1>⚽ LKS Next, tráyamelo: ¡el MUNDIAL 2026! ⚽</h1>
+    <span class="lks-badge" title="Edición Festako Erregeak">Festako Erregeak · edición Mundial</span>
+    <h1>⚽ Festako Erregeak, tráyamelo: ¡el MUNDIAL 2026! ⚽</h1>
     <p class="subtitle">La quiniela oficial de pasillo, café y Teams paralelo. ¿Cuál va a ser tu "ojito con…"?</p>
   </header>
 
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="predict">&#128202; Apostar</button>
     <button class="tab-btn" data-tab="leaderboard">&#127942; Ranking</button>
-    <a href="https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=ES&wtw-filter=ALL">
+    <a href="https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026/scores-fixtures?country=ES&wtw-filter=ALL" target="_blank" rel="noopener noreferrer">
       <button class="tab-btn">📅 Calendario</button>
     </a>
   </nav>
@@ -88,7 +88,7 @@
 
       <!-- Submit -->
       <div class="submit-section">
-        <button class="submit-btn" id="btnSubmit" disabled>&#9917; Sentar cátedra (LKS Next style)</button>
+        <button class="submit-btn" id="btnSubmit" disabled>&#9917; Sentar cátedra (Festako Erregeak style)</button>
       </div>
 
     </div>
@@ -97,7 +97,7 @@
   <!-- ==================== LEADERBOARD TAB ==================== -->
     <div id="tab-leaderboard" class="tab-content">
     <div class="container">
-      <h2 class="section-title">&#127942; Ranking LKS Next</h2>
+      <h2 class="section-title">&#127942; Ranking Festako Erregeak</h2>
       <p class="note-text">
         Haz click en un compi para confirmar el sesgo que ya tienes de que no tiene ni idea de fútbol.
       </p>
@@ -129,7 +129,7 @@
 
   <script src="third_place_table.js?v=group-order-drag-and-new-awards"></script>
   <script src="results.js?v=simulacion-realista-grupos"></script>
-  <script src="app.js?v=fix-awards-validation"></script>
+  <script src="app.js?v=remove-team-selector"></script>
   <div class="name-modal-overlay" id="nameModal" style="display:none;">
   <div class="name-modal">
     <h3>Así que sentando cátedra, ¿eh?</h3>
@@ -147,11 +147,6 @@
       ⚠️ Ya existe una porra con ese nombre. Al confirmar, <strong>se actualizará</strong> tu predicción anterior.
     </p>
 
-    <p>¿Y de qué equipo eres?</p>
-    <select id="teamSelect" class="name-modal-select" required aria-required="true">
-      <option value="">— Elige tu equipo —</option>
-    </select>
-
     <div class="name-modal-actions">
       <button type="button" class="toolbar-btn" id="cancelNameSubmit">Paso, debería estar currando</button>
       <button type="button" class="submit-btn" id="confirmNameSubmit">Apostar fuerte (No hay vuelta atrás)</button>
@@ -159,7 +154,7 @@
   </div>
 </div>
 <footer class="lks-footer">
-  Hecho con cariño (y demasiado café) para la peña de <strong>LKS Next</strong>. Que gane el mejor… o el que más suerte tenga, vaya.
+  Hecho con cariño (y demasiado café) para la kuadrilla <strong>Festako Erregeak</strong>. Que gane el mejor… o el que más suerte tenga, vaya.
 </footer>
 </body>
 </html>
