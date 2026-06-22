@@ -49,6 +49,7 @@ const RESULTS = {
   // se haya jugado.
   quiniela1x2: {
      'Corea del Sur__México': '2',
+     'Escocia__Marruecos':   '2',
   },
 
   knockout: {
