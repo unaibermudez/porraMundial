@@ -23,20 +23,20 @@
 
 const RESULTS = {
   // Orden final de cada grupo: 1º, 2º, 3º, 4º.
-  groups: {
-    A: [],
-    B: [],
-    C: [],
-    D: [],
-    E: [],
-    F: [],
-    G: [],
-    H: [],
-    I: [],
-    J: [],
-    K: [],
-    L: []
-  },
+groups: {
+    A: ['México', 'Corea del Sur', 'Chequia', 'Sudáfrica'],
+    B: ['Canadá', 'Suiza', 'Bosnia y Herzegovina', 'Qatar'],
+    C: ['Brasil', 'Marruecos', 'Escocia', 'Haití'],
+    D: ['USA', 'Australia', 'Paraguay', 'Türkiye'],
+    E: ['Alemania', 'Costa de Marfil', 'Ecuador', 'Curazao'],
+    F: ['Países Bajos', 'Japón', 'Suecia', 'Túnez'],
+    G: ['Egipto', 'Irán', 'Bélgica', 'Nueva Zelanda'],
+    H: ['España', 'Uruguay', 'Cabo Verde', 'Arabia Saudita'],
+    I: ['Noruega', 'Francia', 'Senegal', 'Irak'],
+    J: ['Argentina', 'Austria', 'Jordania', 'Argelia'],
+    K: ['Colombia', 'DR Congo', 'Portugal', 'Uzbekistán'],
+    L: ['Inglaterra', 'Ghana', 'Panamá', 'Croacia']
+  }
 
   // Los 8 mejores terceros que clasifican a dieciseisavos,
   // en orden (1º mejor tercero → 8º mejor tercero).
