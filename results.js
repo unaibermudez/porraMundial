@@ -47,7 +47,9 @@ const RESULTS = {
   // Las claves coinciden con `[team1, team2].sort().join('__')` definido en
   // QUINIELA_1X2_MATCHES dentro de app.js. Dejar "" mientras el partido no
   // se haya jugado.
-  quiniela1x2: {},
+  quiniela1x2: {
+     'Corea del Sur__México': '2',
+  },
 
   knockout: {
     round32: [],
