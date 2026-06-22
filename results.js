@@ -36,7 +36,7 @@ groups: {
     J: ['Argentina', 'Austria', 'Jordania', 'Argelia'],
     K: ['Colombia', 'DR Congo', 'Portugal', 'Uzbekistán'],
     L: ['Inglaterra', 'Ghana', 'Panamá', 'Croacia']
-  }
+  },
 
   // Los 8 mejores terceros que clasifican a dieciseisavos,
   // en orden (1º mejor tercero → 8º mejor tercero).
