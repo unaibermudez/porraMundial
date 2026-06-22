@@ -241,6 +241,9 @@ Si quieres cambiar "Festako Erregeak" por el nombre de tu grupo:
 | `FORM_ID` | ID en la URL de tu Google Form (Paso 2) |
 | `ENTRY_ID` | ID del campo en el enlace previamente rellenado, con `entry.` delante (Paso 2) |
 
+
+..
+
 ---
 
 Hecho con cariño (y demasiado café) para la kuadrilla Festako Erregeak. Que gane el mejor… o el que más suerte tenga.
