@@ -32,10 +32,10 @@ groups: {
     F: ['Países Bajos', 'Japón', 'Suecia', 'Túnez'],
     G: ['Egipto', 'Irán', 'Bélgica', 'Nueva Zelanda'],
     H: ['España', 'Uruguay', 'Cabo Verde', 'Arabia Saudita'],
-    I: ['Noruega', 'Francia', 'Senegal', 'Irak'],
-    J: ['Argentina', 'Austria', 'Jordania', 'Argelia'],
-    K: ['Colombia', 'DR Congo', 'Portugal', 'Uzbekistán'],
-    L: ['Inglaterra', 'Ghana', 'Panamá', 'Croacia']
+    I: ['Francia', 'Noruega', 'Senegal', 'Irak'],
+    J: ['Argentina', 'Austria', 'Argelia', 'Jordania'],
+    K: ['Colombia', 'Portugal', 'DR Congo', 'Uzbekistán'],
+    L: ['Inglaterra', 'Ghana', 'Croacia', 'Panamá']
   },
 
   // Los 8 mejores terceros que clasifican a dieciseisavos,
