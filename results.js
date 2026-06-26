@@ -24,17 +24,17 @@
 const RESULTS = {
   // Orden final de cada grupo: 1º, 2º, 3º, 4º.
   groups: {
-    A: ["México", "Sudáfrica", "Corea del Sur", "Chequia"],
-    B: ["Suiza", "Canadá", "Bosnia y Herzegovina", "Qatar"],
+    A: ["México", "Sudáfrica", "Corea del Sur", "República Checa"],
+    B: ["Suiza", "Canadá", "Bosnia y Herzegovina", "Catar"],
     C: ["Brasil", "Marruecos", "Escocia", "Haití"],
-    D: ["USA", "Australia", "Paraguay", "Türkiye"],
+    D: ["Estados Unidos", "Australia", "Paraguay", "Turquía"],
     E: ["Alemania", "Costa de Marfil", "Ecuador", "Curazao"],
     F: ["Países Bajos", "Japón", "Suecia", "Túnez"],
     G: ["Egipto", "Irán", "Bélgica", "Nueva Zelanda"],
-    H: ["España", "Uruguay", "Cabo Verde", "Arabia Saudita"],
+    H: ["España", "Uruguay", "Cabo Verde", "Arabia Saudí"],
     I: ["Francia", "Noruega", "Senegal", "Irak"],
     J: ["Argentina", "Austria", "Argelia", "Jordania"],
-    K: ["Colombia", "Portugal", "DR Congo", "Uzbekistán"],
+    K: ["Colombia", "Portugal", "RD del Congo", "Uzbekistán"],
     L: ["Inglaterra", "Ghana", "Croacia", "Panamá"],
   },
 
