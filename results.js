@@ -23,19 +23,19 @@
 
 const RESULTS = {
   // Orden final de cada grupo: 1º, 2º, 3º, 4º.
-groups: {
-    A: ['México', 'Corea del Sur', 'Chequia', 'Sudáfrica'],
-    B: ['Canadá', 'Suiza', 'Bosnia y Herzegovina', 'Qatar'],
-    C: ['Brasil', 'Marruecos', 'Escocia', 'Haití'],
-    D: ['USA', 'Australia', 'Paraguay', 'Türkiye'],
-    E: ['Alemania', 'Costa de Marfil', 'Ecuador', 'Curazao'],
-    F: ['Países Bajos', 'Japón', 'Suecia', 'Túnez'],
-    G: ['Egipto', 'Irán', 'Bélgica', 'Nueva Zelanda'],
-    H: ['España', 'Uruguay', 'Cabo Verde', 'Arabia Saudita'],
-    I: ['Francia', 'Noruega', 'Senegal', 'Irak'],
-    J: ['Argentina', 'Austria', 'Argelia', 'Jordania'],
-    K: ['Colombia', 'Portugal', 'DR Congo', 'Uzbekistán'],
-    L: ['Inglaterra', 'Ghana', 'Croacia', 'Panamá']
+  groups: {
+    A: ["México", "Sudáfrica", "Corea del Sur", "Chequia"],
+    B: ["Suiza", "Canadá", "Bosnia y Herzegovina", "Qatar"],
+    C: ["Brasil", "Marruecos", "Escocia", "Haití"],
+    D: ["USA", "Australia", "Paraguay", "Türkiye"],
+    E: ["Alemania", "Costa de Marfil", "Ecuador", "Curazao"],
+    F: ["Países Bajos", "Japón", "Suecia", "Túnez"],
+    G: ["Egipto", "Irán", "Bélgica", "Nueva Zelanda"],
+    H: ["España", "Uruguay", "Cabo Verde", "Arabia Saudita"],
+    I: ["Francia", "Noruega", "Senegal", "Irak"],
+    J: ["Argentina", "Austria", "Argelia", "Jordania"],
+    K: ["Colombia", "Portugal", "DR Congo", "Uzbekistán"],
+    L: ["Inglaterra", "Ghana", "Croacia", "Panamá"],
   },
 
   // Los 8 mejores terceros que clasifican a dieciseisavos,
@@ -48,8 +48,8 @@ groups: {
   // QUINIELA_1X2_MATCHES dentro de app.js. Dejar "" mientras el partido no
   // se haya jugado.
   quiniela1x2: {
-     'Corea del Sur__México': '1',
-     'Escocia__Marruecos':   '2',
+    "Corea del Sur__México": "1",
+    "Escocia__Marruecos": "2",
   },
 
   knockout: {
@@ -72,8 +72,8 @@ groups: {
       quarterfinals: [],
       semifinals: [],
       thirdPlace: [],
-      final: []
-    }
+      final: [],
+    },
   },
 
   semifinalists: [],
@@ -93,6 +93,6 @@ groups: {
     topAssister: "",
     goldenGlove: "",
     topScoringTeam: "",
-    mostConcededTeam: ""
-  }
+    mostConcededTeam: "",
+  },
 };
