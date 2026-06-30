@@ -97,7 +97,7 @@ const RESULTS = {
       "Paraguay",
       "Senegal",
     ],
-    round16: ["Canadá"],
+    round16: ["Canadá", "Marruecos", "Paraguay", "Brasil"],
     quarterfinals: [],
     semifinals: [],
 
