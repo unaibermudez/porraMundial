@@ -118,7 +118,7 @@ const RESULTS = {
       "Argentina",
       "Egipto",
     ],
-    quarterfinals: ["Francia", "Marruecos", "Noruega", "Inglaterra"],
+    quarterfinals: ["Francia", "Marruecos", "Noruega", "Inglaterra", "España"],
     semifinals: [],
 
     champion: "",
@@ -204,7 +204,7 @@ const RESULTS = {
           winner: "Inglaterra",
         },
         // Partido 93: W83 vs W84
-        { match: 93, team1: "Portugal", team2: "España", winner: "" },
+        { match: 93, team1: "Portugal", team2: "España", winner: "España" },
         // Partido 94: W81 vs W82
         { match: 94, team1: "Estados Unidos", team2: "Bélgica", winner: "" },
         // Partido 95: W86 vs W88
