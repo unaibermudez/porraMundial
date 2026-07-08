@@ -118,7 +118,7 @@ const RESULTS = {
       "Argentina",
       "Egipto",
     ],
-    quarterfinals: ["Francia", "Marruecos", "Noruega", "Inglaterra", "España"],
+    quarterfinals: ["Francia", "Marruecos", "Noruega", "Inglaterra", "España", "Bélgica", "Argentina", "Suiza"],
     semifinals: [],
 
     champion: "",
@@ -206,11 +206,11 @@ const RESULTS = {
         // Partido 93: W83 vs W84
         { match: 93, team1: "Portugal", team2: "España", winner: "España" },
         // Partido 94: W81 vs W82
-        { match: 94, team1: "Estados Unidos", team2: "Bélgica", winner: "" },
+        { match: 94, team1: "Estados Unidos", team2: "Bélgica", winner: "Bélgica" },
         // Partido 95: W86 vs W88
-        { match: 95, team1: "Argentina", team2: "Egipto", winner: "" },
+        { match: 95, team1: "Argentina", team2: "Egipto", winner: "Argentina" },
         // Partido 96: W85 vs W87
-        { match: 96, team1: "Suiza", team2: "Colombia", winner: "" },
+        { match: 96, team1: "Suiza", team2: "Colombia", winner: "Suiza" },
       ],
       quarterfinals: [],
       semifinals: [],
