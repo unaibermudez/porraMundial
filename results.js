@@ -212,7 +212,16 @@ const RESULTS = {
         // Partido 96: W85 vs W87
         { match: 96, team1: "Suiza", team2: "Colombia", winner: "Suiza" },
       ],
-      quarterfinals: [],
+      quarterfinals: [
+        // Partido 97: W89 vs W90
+        { match: 97, team1: "Francia", team2: "Marruecos", winner: "" },
+        // Partido 98: W93 vs W94
+        { match: 98, team1: "España", team2: "Bélgica", winner: "" },
+        // Partido 99: W91 vs W92
+        { match: 99, team1: "Noruega", team2: "Inglaterra", winner: "" },
+        // Partido 100: W95 vs W96
+        { match: 100, team1: "Argentina", team2: "Suiza", winner: "" },
+      ],
       semifinals: [],
       thirdPlace: [],
       final: [],
