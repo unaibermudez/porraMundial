@@ -119,7 +119,7 @@ const RESULTS = {
       "Egipto",
     ],
     quarterfinals: ["Francia", "Marruecos", "Noruega", "Inglaterra", "España", "Bélgica", "Argentina", "Suiza"],
-    semifinals: [],
+    semifinals: ["Francia", "Inglaterra", "España", "Argentina"],
 
     champion: "",
     runnerUp: "",
@@ -214,13 +214,13 @@ const RESULTS = {
       ],
       quarterfinals: [
         // Partido 97: W89 vs W90
-        { match: 97, team1: "Francia", team2: "Marruecos", winner: "" },
+        { match: 97, team1: "Francia", team2: "Marruecos", winner: "Francia" },
         // Partido 98: W93 vs W94
-        { match: 98, team1: "España", team2: "Bélgica", winner: "" },
+        { match: 98, team1: "España", team2: "Bélgica", winner: "España" },
         // Partido 99: W91 vs W92
-        { match: 99, team1: "Noruega", team2: "Inglaterra", winner: "" },
+        { match: 99, team1: "Noruega", team2: "Inglaterra", winner: "Inglaterra" },
         // Partido 100: W95 vs W96
-        { match: 100, team1: "Argentina", team2: "Suiza", winner: "" },
+        { match: 100, team1: "Argentina", team2: "Suiza", winner: "Argentina" },
       ],
       semifinals: [],
       thirdPlace: [],
