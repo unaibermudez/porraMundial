@@ -224,7 +224,7 @@ const RESULTS = {
       ],
       semifinals: [
         // Partido 101: W97 vs W98
-        { match: 101, team1: "Francia", team2: "España", winner: "" },
+        { match: 101, team1: "Francia", team2: "España", winner: "España" },
         // Partido 102: W99 vs W100
         { match: 102, team1: "Inglaterra", team2: "Argentina", winner: "" },
       ],
@@ -234,7 +234,7 @@ const RESULTS = {
   },
 
   semifinalists: ["Francia", "Inglaterra", "España", "Argentina"],
-  finalists: [],
+  finalists: ["España"],
 
   champion: "",
   runnerUp: "",
