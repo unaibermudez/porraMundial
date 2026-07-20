@@ -121,13 +121,13 @@ const RESULTS = {
     quarterfinals: ["Francia", "Marruecos", "Noruega", "Inglaterra", "España", "Bélgica", "Argentina", "Suiza"],
     semifinals: ["Francia", "Inglaterra", "España", "Argentina"],
 
-    champion: "",
-    runnerUp: "",
-    finalists: [],
+    champion: "España",
+    runnerUp: "Argentina",
+    finalists: ["España", "Argentina"],
 
-    thirdPlaceWinner: "",
-    final: "",
-    thirdPlace: "",
+    thirdPlaceWinner: "Inglaterra",
+    final: "España",
+    thirdPlace: "Inglaterra",
 
     matches: {
       round32: [
@@ -226,19 +226,25 @@ const RESULTS = {
         // Partido 101: W97 vs W98
         { match: 101, team1: "Francia", team2: "España", winner: "España" },
         // Partido 102: W99 vs W100
-        { match: 102, team1: "Inglaterra", team2: "Argentina", winner: "" },
+        { match: 102, team1: "Inglaterra", team2: "Argentina", winner: "Argentina" },
       ],
-      thirdPlace: [],
-      final: [],
+      thirdPlace: [
+        // Partido 103: L101 vs L102
+        { match: 103, team1: "Francia", team2: "Inglaterra", winner: "Inglaterra" },
+      ],
+      final: [
+        // Partido 104: W101 vs W102
+        { match: 104, team1: "España", team2: "Argentina", winner: "España" },
+      ],
     },
   },
 
   semifinalists: ["Francia", "Inglaterra", "España", "Argentina"],
-  finalists: ["España"],
+  finalists: ["España", "Argentina"],
 
-  champion: "",
-  runnerUp: "",
-  thirdPlaceWinner: "",
+  champion: "España",
+  runnerUp: "Argentina",
+  thirdPlaceWinner: "Inglaterra",
 
   // 5 categorías divertidas — todas son una sola elección por categoría.
   // "topScorer", "topAssister" y "goldenGlove" esperan el NOMBRE de un jugador
@@ -246,10 +252,10 @@ const RESULTS = {
   // "topScoringTeam" y "mostConcededTeam" esperan el NOMBRE de una selección
   //   (tal y como aparece en los grupos).
   awards: {
-    topScorer: "",
-    topAssister: "",
-    goldenGlove: "",
-    topScoringTeam: "",
-    mostConcededTeam: "",
+    topScorer: "Kylian Mbappé", // 10 goles (Bota de Oro)
+    topAssister: "Michael Olise", // 7 asistencias
+    goldenGlove: "Unai Simón", // Guante de Oro, 7 porterías a cero
+    topScoringTeam: "Inglaterra", // 20 goles
+    mostConcededTeam: "Irak", // 12 goles encajados
   },
 };
